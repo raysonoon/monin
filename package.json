@@ -1,7 +1,7 @@
 {
   "name": "monin",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/app/index.tsx",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -10,15 +10,18 @@
     "lint": "expo lint"
   },
   "dependencies": {
-    "expo": "~53.0.20",
-    "expo-status-bar": "~2.2.3",
-    "react": "19.0.0",
-    "react-native": "0.79.5"
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "expo": "^54.0.13",
+    "expo-status-bar": "~3.0.8",
+    "prettier": "^3.6.2",
+    "react": "19.1.0",
+    "react-native": "0.81.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "eslint": "^9.0.0",
-    "eslint-config-expo": "~9.2.0"
+    "eslint-config-expo": "~10.0.0"
   },
   "private": true
 }
