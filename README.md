@@ -27,9 +27,9 @@ React Native app to track expenses through email notifications
   - [x] Settings page
   - [x] Use Bolt generate UI
   - [x] Use Figma make and touch up UI
-- [ ] Set up dev env
+- [x] Set up dev env
   - [x] Update dependencies
-  - [ ] File structure
+  - [x] File structure
 - [ ] Create UI
   - [ ] login-view
   - [ ] home-view
