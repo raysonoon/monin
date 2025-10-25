@@ -104,9 +104,10 @@ OR
   - [x] Update dependencies
   - [x] File structure
 - [ ] Create UI
-  - [ ] login-view
+  - [x] login-view
   - [ ] home-view
   - [ ] settings-view
+- [x] Configure Expo router
 - [ ] Frontend
 - [ ] Backend
 - [ ] Deploy

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { router } from "expo-router";
+import { setIsLoggedIn } from "./useAuth";
 
 interface UseLoginReturn {
   email: string;
@@ -7,7 +9,9 @@ interface UseLoginReturn {
   setPassword: (value: string) => void;
   handleLogin: () => void;
 }
-
+/**
+ * @todo Handles Login UI only - backend auth planned later
+ */
 export const useLogin = (): UseLoginReturn => {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -18,9 +22,9 @@ export const useLogin = (): UseLoginReturn => {
       return;
     }
     console.log("Logging in with:", { email, password });
-    /**
-     * @todo Call your API or authentication service here
-     */
+    setIsLoggedIn(true);
+    // Temporary navigation to HomeScreen (app/index.tsx)
+    router.replace("/");
   };
 
   return { email, setEmail, password, setPassword, handleLogin };
