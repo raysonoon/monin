@@ -106,6 +106,7 @@ OR
 - [ ] Create UI
   - [x] login-view
   - [ ] home-view
+    - [x] Configure Victory Native for bar chart
   - [ ] settings-view
 - [x] Configure Expo router
 - [ ] Frontend
