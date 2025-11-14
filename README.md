@@ -94,7 +94,7 @@ OR
 ## TODOs
 
 - [ ] Define features
-- [ ] Create figma design
+- [x] Create figma design
   - [x] Login page
   - [x] Home page
   - [x] Settings page
@@ -104,10 +104,11 @@ OR
   - [x] Update dependencies
   - [x] File structure
 - [ ] Create UI
-  - [x] login-view
-  - [x] home-view
+  - [x] LOginScreen
+  - [x] HomeScreen
     - [x] Configure Victory Native for bar chart
   - [ ] settings-view
+    - [x] Configure routing to SettingsScreen
 - [x] Configure Expo router
 - [ ] Frontend
 - [ ] Backend
