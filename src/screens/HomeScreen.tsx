@@ -1,6 +1,13 @@
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
 import { CartesianChart, BarGroup } from "victory-native";
 import { useFont } from "@shopify/react-native-skia";
+import { useRouter } from "expo-router";
 import segoe from "../../assets/fonts/segoeui.ttf";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
@@ -44,10 +51,20 @@ export const HomeScreen = () => {
   const yMin = Math.min(...data.flatMap((d) => [d.income, d.expense]));
   const yMax = Math.max(...data.flatMap((d) => [d.income, d.expense]));
 
+  const router = useRouter();
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Financial Dashboard</Text>
-
+      <View style={styles.headerRow}>
+        <Text style={styles.header}>Financial Dashboard</Text>
+        <TouchableOpacity
+          style={styles.settingsContainer}
+          onPress={() => router.navigate("/settings")}
+        >
+          <Ionicons name="settings-outline" size={24} color="#6B7280" />
+          <Text style={styles.settingsText}>Settings</Text>
+        </TouchableOpacity>
+      </View>
       <View style={styles.cardRow}>
         <View style={styles.card}>
           <View style={styles.cardIcons}>
@@ -162,10 +179,29 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     backgroundColor: "#fff",
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   header: {
     fontSize: 26,
     fontWeight: "700",
     marginBottom: 20,
+  },
+  settingsContainer: {
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#6B7280",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  settingsText: {
+    color: "#6B7280",
   },
   cardRow: {
     flexDirection: "row",

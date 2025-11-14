@@ -105,7 +105,7 @@ OR
   - [x] File structure
 - [ ] Create UI
   - [x] login-view
-  - [ ] home-view
+  - [x] home-view
     - [x] Configure Victory Native for bar chart
   - [ ] settings-view
 - [x] Configure Expo router
