@@ -3,6 +3,8 @@ import { CartesianChart, BarGroup } from "victory-native";
 import { useFont } from "@shopify/react-native-skia";
 import segoe from "../../assets/fonts/segoeui.ttf";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Feather from "@expo/vector-icons/Feather";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 type Category = {
   name: string;
@@ -48,10 +50,32 @@ export const HomeScreen = () => {
 
       <View style={styles.cardRow}>
         <View style={styles.card}>
+          <View style={styles.cardIcons}>
+            <Feather name="dollar-sign" size={24} color="#6B7280"></Feather>
+            <View style={styles.cashFlowTrendContainer}>
+              <MaterialCommunityIcons
+                name="arrow-top-right"
+                size={16}
+                color="#059669"
+              />
+              <Text style={styles.cashFlowTrendText}>12%</Text>
+            </View>
+          </View>
           <Text style={styles.cardValue}>$1,100</Text>
           <Text style={styles.cardLabel}>Net Cash Flow</Text>
         </View>
         <View style={styles.card}>
+          <View style={styles.cardIcons}>
+            <Ionicons name="trending-down" size={24} color="#6B7280" />
+            <View style={styles.expensesTrendContainer}>
+              <MaterialCommunityIcons
+                name="arrow-bottom-right"
+                size={16}
+                color="#DC2626"
+              />
+              <Text style={styles.expensesTrendText}>8%</Text>
+            </View>
+          </View>
           <Text style={styles.cardValue}>$3,000</Text>
           <Text style={styles.cardLabel}>Total Expenses</Text>
         </View>
@@ -156,6 +180,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 3,
   },
+  cardIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 48,
+    marginBottom: 12,
+  },
   cardValue: {
     fontSize: 24,
     fontWeight: "600",
@@ -164,6 +194,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 6,
+  },
+  cashFlowTrendContainer: {
+    backgroundColor: "#dcfce7",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+  },
+  cashFlowTrendText: {
+    color: "#059669",
+  },
+  expensesTrendContainer: {
+    backgroundColor: "#FEE2E2",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+  },
+  expensesTrendText: {
+    color: "#DC2626",
   },
   sectionTitle: {
     fontSize: 18,
