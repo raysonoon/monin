@@ -104,11 +104,15 @@ OR
   - [x] Update dependencies
   - [x] File structure
 - [ ] Create UI
-  - [x] LOginScreen
+  - [x] LoginScreen
   - [x] HomeScreen
     - [x] Configure Victory Native for bar chart
-  - [ ] settings-view
+  - [ ] SettingsScreen
     - [x] Configure routing to SettingsScreen
+    - [x] Explore email parsing in Gmail (Backend API)
+    - [x] Install required dependencies
+    - [ ] Set up Google Authentication
+    - [ ] Match SettingsScreen UI
 - [x] Configure Expo router
 - [ ] Frontend
 - [ ] Backend
