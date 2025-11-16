@@ -5,11 +5,15 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
   StyleSheet,
 } from "react-native";
 import { useState } from "react";
+import { useAuth } from "../context/auth";
 
 export default function SettingsScreen() {
+  const { user, isLoading, signIn } = useAuth();
+
   const [autoSync, setAutoSync] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(false);
   const [manualApproval, setManualApproval] = useState(true);
@@ -30,10 +34,21 @@ export default function SettingsScreen() {
       {/* Gmail Connection */}
       <View style={styles.section}>
         <Text style={styles.title}>Gmail Connection</Text>
-        <Text>Connected Successfully (your.email@gmail.com)</Text>
+        <Text>No email connected</Text>
 
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Disconnect</Text>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => {
+            console.log("Pressed, isLoading:", isLoading);
+            signIn();
+          }}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Connect your Gmail</Text>
+          )}
         </TouchableOpacity>
       </View>
 
