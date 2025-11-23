@@ -350,25 +350,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const formData = new FormData();
         formData.append("code", code);
 
-        // // Add platform information for the backend to handle appropriately
+        // Add platform information for the backend to handle appropriately
         if (isWeb) {
           formData.append("platform", "web");
         }
 
         console.log("request", request);
 
-        // // Get the code verifier from the request object
-        // // This is the same verifier that was used to generate the code challenge
-        // if (request?.codeVerifier) {
-        //   formData.append("code_verifier", request.codeVerifier);
-        // } else {
-        //   console.warn("No code verifier found in request object");
-        // }
+        // Get the code verifier from the request object
+        // This is the same verifier that was used to generate the code challenge
+        if (request?.codeVerifier) {
+          formData.append("code_verifier", request.codeVerifier);
+        } else {
+          console.warn("No code verifier found in request object");
+        }
 
-        // // Send the authorization code to our token endpoint
-        // // The server will exchange this code with Google for access and refresh tokens
-        // // For web: credentials are included to handle cookies
-        // // For native: we'll receive the tokens directly in the response
+        // Send the authorization code to our token endpoint
+        // The server will exchange this code with Google for access and refresh tokens
+        // For web: credentials are included to handle cookies
+        // For native: we'll receive the tokens directly in the response
         const tokenResponse = await fetch(`${BASE_URL}/api/auth/token`, {
           method: "POST",
           body: formData,
@@ -382,17 +382,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (userData.success) {
             //     // Fetch the session to get user data
             //     // This ensures we have the most up-to-date user information
-            //     const sessionResponse = await fetch(
-            //       `${BASE_URL}/api/auth/session`,
-            //       {
-            //         method: "GET",
-            //         credentials: "include",
-            //       }
-            //     );
-            //     if (sessionResponse.ok) {
-            //       const sessionData = await sessionResponse.json();
-            //       setUser(sessionData as AuthUser);
-            //     }
+            const sessionResponse = await fetch(
+              `${BASE_URL}/api/auth/session`,
+              {
+                method: "GET",
+                credentials: "include",
+              },
+            );
+            if (sessionResponse.ok) {
+              const sessionData = await sessionResponse.json();
+              setUser(sessionData as AuthUser);
+            }
           }
         } else {
           //   // For native: The server returns both tokens in the response

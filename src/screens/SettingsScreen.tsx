@@ -34,7 +34,7 @@ export default function SettingsScreen() {
       {/* Gmail Connection */}
       <View style={styles.section}>
         <Text style={styles.title}>Gmail Connection</Text>
-        <Text>No email connected</Text>
+        <Text>{user ? `${user.email} connected` : "No email connected"}</Text>
 
         <TouchableOpacity
           style={styles.button}

@@ -7,9 +7,7 @@ export async function GET(request: Request) {
   if (!combinedPlatformAndState) {
     return Response.json({ error: "Invalid state" }, { status: 400 });
   }
-  // strip platform to return state as it was set on the client
-  // const platform = combinedPlatformAndState.split("|")[0];
-  // const state = combinedPlatformAndState.split("|")[1];
+  // strip platform to return redirectPath and state as it was set on the client
   const [platform, state, redirectPath] = combinedPlatformAndState.split("|");
 
   const outgoingParams = new URLSearchParams({
@@ -21,6 +19,5 @@ export async function GET(request: Request) {
   const path = redirectPath || ""; // fallback to root if not present
 
   // Build redirect URI
-  console.log(`Redirecting to: ${base}${path}?${outgoingParams.toString()}`);
   return Response.redirect(`${base}${path}?${outgoingParams.toString()}`);
 }
