@@ -9,7 +9,6 @@ import {
 
 // Redirect to Google sign-in
 export async function GET(request: Request) {
-  console.log("Authorize endpoint hit:", request.url);
   if (!GOOGLE_CLIENT_ID) {
     return Response.json(
       { error: "Missing GOOGLE_CLIENT_ID environment variable" },
@@ -35,7 +34,8 @@ export async function GET(request: Request) {
   }
 
   // use state to drive redirect back to platform
-  let state = platform + "|" + url.searchParams.get("state");
+  // state is a random string generated when calling promptAsync from expo-auth-session
+  let state = platform + "|" + url.searchParams.get("state") + "|settings";
 
   if (!state) {
     return Response.json({ error: "Invalid state" }, { status: 400 });
