@@ -10,9 +10,11 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useAuth } from "../context/auth";
+import { BASE_URL } from "../../utils/constants";
 
-export default function SettingsScreen() {
-  const { user, isLoading, signIn, signOut } = useAuth();
+export const SettingsScreen = () => {
+  const { user, isLoading, signIn, signOut, fetchWithAuth } = useAuth();
+  const [data, setData] = useState();
 
   const [autoSync, setAutoSync] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(false);
@@ -28,6 +30,15 @@ export default function SettingsScreen() {
   ];
 
   const [senderSelected, setSenderSelected] = useState({});
+
+  const getProtectedData = async () => {
+    const response = await fetchWithAuth(`${BASE_URL}/api/protected/data`, {
+      method: "GET",
+    });
+
+    const data = await response.json();
+    setData(data);
+  };
 
   return (
     <ScrollView style={{ padding: 20, backgroundColor: "#f4f4f4" }}>
@@ -67,6 +78,15 @@ export default function SettingsScreen() {
             )}
           </TouchableOpacity>
         )}
+      </View>
+
+      {/* Protected Data */}
+      <View style={styles.section}>
+        <Text style={styles.title}>Protected Data</Text>
+        <Text>{JSON.stringify(data)}</Text>
+        <TouchableOpacity style={styles.button} onPress={getProtectedData}>
+          <Text style={styles.buttonText}>Fetch protected data</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Sync Settings */}
@@ -126,7 +146,7 @@ export default function SettingsScreen() {
       </TouchableOpacity>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   section: {
