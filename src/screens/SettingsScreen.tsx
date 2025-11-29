@@ -12,7 +12,7 @@ import { useState } from "react";
 import { useAuth } from "../context/auth";
 
 export default function SettingsScreen() {
-  const { user, isLoading, signIn } = useAuth();
+  const { user, isLoading, signIn, signOut } = useAuth();
 
   const [autoSync, setAutoSync] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(false);
@@ -36,20 +36,37 @@ export default function SettingsScreen() {
         <Text style={styles.title}>Gmail Connection</Text>
         <Text>{user ? `${user.email} connected` : "No email connected"}</Text>
 
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            console.log("Pressed, isLoading:", isLoading);
-            signIn();
-          }}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Connect your Gmail</Text>
-          )}
-        </TouchableOpacity>
+        {user ? (
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: "#dc2626" }]}
+            onPress={() => {
+              console.log("Signing out from gmail");
+              signOut();
+            }}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Disconnect Gmail</Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              console.log("Signing in to gmail");
+              signIn();
+            }}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Connect your Gmail</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Sync Settings */}
