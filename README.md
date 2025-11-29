@@ -111,8 +111,20 @@ OR
     - [x] Configure routing to SettingsScreen
     - [x] Explore email parsing in Gmail (Backend API)
     - [x] Install required dependencies
-    - [ ] Set up Google Authentication
+    - [x] Set up Google Authentication
+      - [x] Initial auth request
+      - [x] Code exchange for tokens
+      - [ ] Persist session
+        - [ ] Cookie for web (bug now. might not be necessary)
+        - [x] Expo secure storage for native
+        - [x] Refresh token API
+    - [x] Create a test protected API (at least for native) 
+    - [x] Link to Gmail APIs
+    - [ ] Refresh logic for googleAccessToken (in gcloud?)
+    - [ ] Parse an existing transaction email
     - [ ] Match SettingsScreen UI
+- [ ] Gmail API restricted scope verification
+- [ ] Google verification center stuff
 - [x] Configure Expo router
 - [ ] Frontend
 - [ ] Backend

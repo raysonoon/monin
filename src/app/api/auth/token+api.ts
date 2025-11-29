@@ -137,5 +137,6 @@ export async function POST(request: Request) {
   return Response.json({
     accessToken,
     refreshToken,
+    googleAccessToken: data.access_token,
   });
 }

@@ -37,11 +37,17 @@ const AuthContext = createContext({
     Promise.resolve(new Response()),
   isLoading: false,
   error: null as AuthError | null,
+  googleAccessToken: null as string | null,
 });
 
 const config: AuthRequestConfig = {
   clientId: "google",
-  scopes: ["openid", "profile", "email"],
+  scopes: [
+    "openid",
+    "profile",
+    "email",
+    "https://www.googleapis.com/auth/gmail.readonly",
+  ],
   redirectUri: makeRedirectUri(),
 };
 
@@ -54,11 +60,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(
+    null,
+  );
   const [request, response, promptAsync] = useAuthRequest(config, discovery);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<AuthError | null>(null);
   const isWeb = Platform.OS === "web";
-  const refreshInProgressRef = React.useRef(false);
+  const refreshInProgressRef = useRef(false);
 
   useEffect(() => {
     handleResponse();
@@ -245,6 +254,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const tokens = await refreshResponse.json();
         const newAccessToken = tokens.accessToken;
         const newRefreshToken = tokens.refreshToken;
+        const newGoogleAccessToken = tokens.googleAccessToken;
 
         console.log(
           "Received new access token:",
@@ -257,12 +267,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (newAccessToken) setAccessToken(newAccessToken);
         if (newRefreshToken) setRefreshToken(newRefreshToken);
+        if (newGoogleAccessToken) setGoogleAccessToken(newGoogleAccessToken);
 
-        // Save both tokens to cache
+        // Save tokens to cache
         if (newAccessToken)
           await tokenCache?.saveToken("accessToken", newAccessToken);
         if (newRefreshToken)
           await tokenCache?.saveToken("refreshToken", newRefreshToken);
+        if (newGoogleAccessToken)
+          await tokenCache?.saveToken(
+            "googleAccessToken",
+            newGoogleAccessToken,
+          );
 
         // Update user data from the new access token
         if (newAccessToken) {
@@ -300,31 +316,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const handleNativeTokens = async (tokens: {
     accessToken: string;
     refreshToken: string;
+    googleAccessToken: string;
   }) => {
-    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-      tokens;
-
-    console.log(
-      "Received initial access token:",
-      newAccessToken ? "exists" : "missing",
-    );
+    const {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      googleAccessToken: newGoogleAccessToken,
+    } = tokens;
 
     console.log("Inital access token:", newAccessToken);
 
-    console.log(
-      "Received initial refresh token:",
-      newRefreshToken ? "exists" : "missing",
-    );
+    console.log("Initial refresh token:", newRefreshToken);
+
+    console.log("Initial google access token:", newGoogleAccessToken);
 
     // Store tokens in state
     if (newAccessToken) setAccessToken(newAccessToken);
     if (newRefreshToken) setRefreshToken(newRefreshToken);
+    if (newGoogleAccessToken) setGoogleAccessToken(newGoogleAccessToken);
 
     // Save tokens to secure storage for persistence
     if (newAccessToken)
       await tokenCache?.saveToken("accessToken", newAccessToken);
     if (newRefreshToken)
       await tokenCache?.saveToken("refreshToken", newRefreshToken);
+    if (newGoogleAccessToken) {
+      await tokenCache?.saveToken("googleAccessToken", newGoogleAccessToken);
+    }
 
     // Decode the JWT access token to get user information
     if (newAccessToken) {
@@ -376,12 +394,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
 
         if (isWeb) {
-          //   // For web: The server sets the tokens in HTTP-only cookies
-          //   // We just need to get the user data from the response
+          // For web: The server sets the tokens in HTTP-only cookies
+          // We just need to get the user data from the response
           const userData = await tokenResponse.json();
           if (userData.success) {
-            //     // Fetch the session to get user data
-            //     // This ensures we have the most up-to-date user information
+            // Fetch the session to get user data
+            // This ensures we have the most up-to-date user information
             const sessionResponse = await fetch(
               `${BASE_URL}/api/auth/session`,
               {
@@ -395,9 +413,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
           }
         } else {
-          //   // For native: The server returns both tokens in the response
-          //   // We need to store these tokens securely and decode the user data
+          // For native: The server returns both tokens in the response
+          // We need to store these tokens securely and decode the user data
           const tokens = await tokenResponse.json();
+          console.log("Tokens received from token endpoint:", tokens);
           await handleNativeTokens(tokens);
         }
       } catch (e) {
@@ -500,12 +519,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // For native: Clear both tokens from cache
       await tokenCache?.deleteToken("accessToken");
       await tokenCache?.deleteToken("refreshToken");
+      await tokenCache?.deleteToken("googleAccessToken");
     }
 
     // Clear state
     setUser(null);
     setAccessToken(null);
     setRefreshToken(null);
+    setGoogleAccessToken(null);
   };
 
   return (
@@ -517,6 +538,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         error,
         fetchWithAuth,
+        googleAccessToken,
       }}
     >
       {children}

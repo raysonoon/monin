@@ -13,7 +13,8 @@ import { useAuth } from "../context/auth";
 import { BASE_URL } from "../../utils/constants";
 
 export const SettingsScreen = () => {
-  const { user, isLoading, signIn, signOut, fetchWithAuth } = useAuth();
+  const { user, isLoading, googleAccessToken, signIn, signOut, fetchWithAuth } =
+    useAuth();
   const [data, setData] = useState();
 
   const [autoSync, setAutoSync] = useState(true);
@@ -38,6 +39,32 @@ export const SettingsScreen = () => {
 
     const data = await response.json();
     setData(data);
+  };
+
+  const getGmailProfile = async () => {
+    console.log("Requesting with Google Access Token:", googleAccessToken);
+    try {
+      const response = await fetch(
+        // `https://gmail.googleapis.com/gmail/v1/users/me/profile`,
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/19acef2b9be8ffdc`, // Retrieve id from list messages API
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${googleAccessToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        alert("Failed to fetch Gmail profile: " + JSON.stringify(error));
+        return;
+      }
+      const profile = await response.json();
+      alert("Gmail Profile: " + JSON.stringify(profile, null, 2));
+    } catch (err) {
+      alert("Error: " + err);
+    }
   };
 
   return (
@@ -141,7 +168,7 @@ export const SettingsScreen = () => {
       </View>
 
       {/* Run Test */}
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={getGmailProfile}>
         <Text style={styles.buttonText}>Run Test</Text>
       </TouchableOpacity>
     </ScrollView>
