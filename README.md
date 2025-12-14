@@ -123,7 +123,19 @@ OR
     - [ ] Refresh logic for googleAccessToken (in gcloud?)
     - [ ] Parse an existing transaction email
     - [ ] Match SettingsScreen UI
-- [ ] Gmail API restricted scope verification
+- [x] Gmail API restricted scope verification
+- [x] Create new Gmail and set up email forwarding
+  - [x] PayLah
+  - [x] YouTrip 
+- [x] Analyse email templates
+  - [x] PayLah
+  - [x] YouTrip 
+- [x] Parse email transactions
+  - [x] PayLah
+  - [ ] YouTrip
+- [ ] Regex to extract transaction data
+- [ ] Display PayLah transaction data in UI
+- [ ] Display YouTrip transaction data in UI
 - [ ] Google verification center stuff
 - [x] Configure Expo router
 - [ ] Frontend
