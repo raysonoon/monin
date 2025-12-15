@@ -1,16 +1,21 @@
-export interface GmailBody {
+interface GmailBody {
   size: number;
   data?: string;
 }
 
-export interface GmailPart {
+interface GmailPart {
   mimeType: string;
   body: GmailBody;
   parts?: GmailPart[];
 }
 
+export interface GmailHeader {
+  name: string;
+  value: string;
+}
+
 export interface GmailPayload {
-  headers: { name: string; value: string }[];
+  headers: GmailHeader[];
   mimeType: string;
   body: GmailBody;
   parts?: GmailPart[];

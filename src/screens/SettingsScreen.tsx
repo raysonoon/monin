@@ -10,26 +10,30 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { useAuth } from "../context/auth";
+import { useGmail } from "../hooks/useGmail";
 import { BASE_URL } from "../../utils/constants";
-import type {
-  GmailPayload,
-  GmailMessage,
-  GmailMessagesList,
-} from "../types/gmail";
-import type { Transaction } from "../types/transaction";
 
 export const SettingsScreen = () => {
-  const { user, isLoading, googleAccessToken, signIn, signOut, fetchWithAuth } =
-    useAuth();
+  const {
+    user,
+    signIn,
+    signOut,
+    isLoading,
+    paylahEmailData,
+    listPaylahEmails,
+    isSyncing,
+    syncError,
+  } = useGmail();
+
+  const { fetchWithAuth } = useAuth();
+
   const [data, setData] = useState();
-  const [paylahEmailData, setPaylahEmailData] = useState<
-    Transaction | undefined
-  >();
 
   const [autoSync, setAutoSync] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(false);
   const [manualApproval, setManualApproval] = useState(true);
 
+  // Dummy data
   const recognizedSenders = [
     { name: "Amazon", category: "Shopping" },
     { name: "Uber", category: "Transportation" },
@@ -48,126 +52,6 @@ export const SettingsScreen = () => {
 
     const data = await response.json();
     setData(data);
-  };
-
-  const listPaylahEmails = async () => {
-    try {
-      const response = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent("subject:(Fwd: Transaction Alerts) 'paylah.alert@dbs.com'")}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${googleAccessToken}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        alert("Failed to fetch PayLah emails: " + JSON.stringify(error));
-        return;
-      }
-      const paylahEmails: GmailMessagesList = await response.json();
-      console.log("Raw data: ", paylahEmails);
-
-      // Iterate over each message and call parsePaylahEmail
-      if (paylahEmails.messages && Array.isArray(paylahEmails.messages)) {
-        for (const msg of paylahEmails.messages) {
-          await parsePaylahEmail(msg.id);
-        }
-      }
-    } catch (err) {
-      console.error("Error: " + err);
-    }
-  };
-
-  const parsePaylahEmail = async (messageId: string) => {
-    try {
-      const response = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${googleAccessToken}`,
-          },
-        },
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        alert("Failed to fetch Paylah email: " + JSON.stringify(error));
-        return;
-      }
-      const paylahEmail: GmailMessage = await response.json();
-      const transaction = await parseTransaction(paylahEmail);
-      setPaylahEmailData(transaction);
-      // alert("Parsing PayLah email: " + JSON.stringify(paylahEmail, null, 2));
-    } catch (err) {
-      console.error("Error: " + err);
-    }
-  };
-
-  const parseTransaction = async (
-    paylahEmail: GmailMessage,
-  ): Promise<Transaction> => {
-    const headers = paylahEmail.payload.headers;
-    const getHeader = (name: string) =>
-      headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value;
-
-    const date = getHeader("Date") || 0;
-    console.log("Date extracted from header:", date);
-    const emailId = paylahEmail.id;
-
-    // Get and decode the body
-    const getBody = (payload: GmailPayload): string | undefined => {
-      if (payload.body && payload.body.data) return payload.body.data;
-      if (payload.parts && Array.isArray(payload.parts)) {
-        for (const part of payload.parts) {
-          if (part.mimeType === "text/plain" && part.body && part.body.data) {
-            return part.body.data;
-          }
-        }
-      }
-      return undefined;
-    };
-    const rawBody = getBody(paylahEmail.payload);
-    // Regex to convert Base64URL --> Base64 then ASCII --> binary
-    const decodedBody = rawBody
-      ? atob(rawBody.replace(/-/g, "+").replace(/_/g, "/"))
-      : "";
-
-    const normalizedBody = decodedBody
-      .replace(/\r\n/g, "\n") // Windows line break --> Unix line break
-      .replace(/\n+/g, "\n") // Multiple newlines into one
-      // .replace(/\s+/g, " ") // Multiple spaces into one
-      .trim(); // Remove leading, trailing spaces
-
-    console.log("Normalized email body:", normalizedBody);
-
-    const merchantMatch = normalizedBody.match(/^to:\s*([a-z0-9 .&()-]+)$/im);
-    console.log("merchantMatch:", merchantMatch);
-
-    const merchant = merchantMatch?.[1]?.trim();
-    console.log("merchant:", merchant);
-
-    const amountMatch = normalizedBody.match(/(SGD)\s?([\d,.]+)/);
-    console.log("amountMatch:", amountMatch);
-
-    const currency = amountMatch?.[1];
-    console.log("currency:", currency);
-    const amount = amountMatch
-      ? parseFloat(amountMatch[2].replace(",", "")).toFixed(2)
-      : null;
-    console.log("amount:", amount);
-
-    return {
-      source: "gmail",
-      merchant: merchant,
-      amount: amount,
-      currency: currency,
-      date: new Date(date).toISOString(),
-      emailId,
-    };
   };
 
   return (
@@ -222,10 +106,25 @@ export const SettingsScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* PayLah Data */}
+      {/* Last Synced Transaction */}
       <View style={styles.section}>
-        <Text style={styles.title}>PayLah Data</Text>
+        <Text style={styles.title}>Last Synced Transaction</Text>
+        {syncError && <Text style={{ color: "red" }}>Error: {syncError}</Text>}
         <Text>{JSON.stringify(paylahEmailData)}</Text>
+        {/* Run Test */}
+        <TouchableOpacity
+          style={styles.button}
+          onPress={listPaylahEmails}
+          disabled={isSyncing || !user}
+        >
+          {isSyncing ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>
+              {user ? "Run Full Sync Test" : "Connect Gmail to Run Test"}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Sync Settings */}
@@ -278,11 +177,6 @@ export const SettingsScreen = () => {
           <Switch value={manualApproval} onValueChange={setManualApproval} />
         </View>
       </View>
-
-      {/* Run Test */}
-      <TouchableOpacity style={styles.button} onPress={listPaylahEmails}>
-        <Text style={styles.buttonText}>Run Test</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 };
