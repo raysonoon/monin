@@ -1,9 +1,9 @@
 export interface Transaction {
   source: "gmail";
-  merchant: string;
-  amount: number;
-  currency: string;
-  date: string; // ISO
+  merchant: string | undefined;
+  amount: string | null; // 2dp string
+  currency: string | undefined;
+  date: string; // ISO string
   category?: string;
   emailId: string;
 }

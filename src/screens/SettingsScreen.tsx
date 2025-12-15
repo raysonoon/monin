@@ -114,7 +114,8 @@ export const SettingsScreen = () => {
     const getHeader = (name: string) =>
       headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value;
 
-    const date = getHeader("Date");
+    const date = getHeader("Date") || 0;
+    console.log("Date extracted from header:", date);
     const emailId = paylahEmail.id;
 
     // Get and decode the body
@@ -130,24 +131,41 @@ export const SettingsScreen = () => {
       return undefined;
     };
     const rawBody = getBody(paylahEmail.payload);
+    // Regex to convert Base64URL --> Base64 then ASCII --> binary
     const decodedBody = rawBody
       ? atob(rawBody.replace(/-/g, "+").replace(/_/g, "/"))
       : "";
 
-    console.log("Decoded paylah email body:", decodedBody);
+    const normalizedBody = decodedBody
+      .replace(/\r\n/g, "\n") // Windows line break --> Unix line break
+      .replace(/\n+/g, "\n") // Multiple newlines into one
+      // .replace(/\s+/g, " ") // Multiple spaces into one
+      .trim(); // Remove leading, trailing spaces
 
-    // TODO: Use regex to extract merchant, amount, currency, etc. from decodedBody
-    // Example (pseudo-code):
-    // const merchant = ...;
-    // const amount = ...;
-    // const currency = ...;
+    console.log("Normalized email body:", normalizedBody);
+
+    const merchantMatch = normalizedBody.match(/^to:\s*([a-z0-9 .&()-]+)$/im);
+    console.log("merchantMatch:", merchantMatch);
+
+    const merchant = merchantMatch?.[1]?.trim();
+    console.log("merchant:", merchant);
+
+    const amountMatch = normalizedBody.match(/(SGD)\s?([\d,.]+)/);
+    console.log("amountMatch:", amountMatch);
+
+    const currency = amountMatch?.[1];
+    console.log("currency:", currency);
+    const amount = amountMatch
+      ? parseFloat(amountMatch[2].replace(",", "")).toFixed(2)
+      : null;
+    console.log("amount:", amount);
 
     return {
       source: "gmail",
-      merchant: "DBS PayLah", // Example, parse from body
-      amount: 0, // Parse from body
-      currency: "SGD", // Parse from body
-      date: new Date(date || 0).toISOString(),
+      merchant: merchant,
+      amount: amount,
+      currency: currency,
+      date: new Date(date).toISOString(),
       emailId,
     };
   };

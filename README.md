@@ -133,7 +133,7 @@ OR
 - [x] Parse email transactions
   - [x] PayLah
   - [ ] YouTrip
-- [ ] Regex to extract transaction data
+- [x] Regex to extract transaction data
 - [ ] Display PayLah transaction data in UI
 - [ ] Display YouTrip transaction data in UI
 - [ ] Google verification center stuff

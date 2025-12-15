@@ -17,14 +17,95 @@ Various emails templates to normalise and parse transaction data from merchants
   - `mimeType`: e.g., "multipart/alternative"
   - `parts`: Array of parts (each may have its own mimeType, body, etc.)
   - `body`: May contain the message body (often empty if parts exist)
+
+### Data encoding
+#### Base64
+- Encode binary data into ASCII characters for text-based systems like emails and URLs
+- Binary data like images or files can be converted to Base64 and included as plain text
+- 64 characters
+  - Uppercase letters (A-Z), lowercase letters (a-z), digits (0-9), +, /, =
   
+#### Base64URL
+- Gmail uses this
+- +, / replaced with -, _ respectively
+- = omitted
+> Avoid characters that have special meanings in URL
+- Safe for URLs and JSON transport
+- 
+```js
+function base64UrlEncode(str) {
+    return btoa(str)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+function base64UrlDecode(str) {
+    str = str
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+    while (str.length % 4) {
+        str += '=';
+    }
+    return atob(str);
+}
+
+const originalString = 'Hello World!';
+const encoded = base64UrlEncode(originalString);
+const decoded = base64UrlDecode(encoded);
+
+console.log('Original:', originalString); // Hello World!
+console.log('Encoded:', encoded); // SGVsbG8gV29ybGQh
+console.log('Decoded:', decoded); // Hello World!
+```
+
+## Detect
+- Add to q parameters
+  - Add "Fwd: " to start of subject
+  - Add merchant email to body keyword
+
 ## Parsing
-- Add "Fwd: " to start of subject
-- Add merchant email to body keyword
-  
-## Paylah
+
+### Date
+- Extracted from email headers
+```js
+const headers = paylahEmail.payload.headers;
+```
+
+### Body
+Raw email body (Base64URL) --> Decode email w/ atob --> Normalize email --> Extract vendor-specific info
+
+#### Amount
+```js
+// Matches literal string "SGD" with optional (0 or 1) whitespace character \s? e.g. SGD12.34 or SGD 12.34
+// Capture group () matches one or more of any digit \d, comma and dot
+const amountMatch = normalizedBody.match(/(SGD)\s?([\d,.]+)/);
+const amount = amountMatch
+  ? parseFloat(amountMatch[2].replace(",", "")) // Removes comma from thousands
+  : null;
+// amountMatch[0] === "SGD 23.50"
+// amountMatch[2] === "23.50"
+```
+
+#### Currency
+```js
+const currency = amountMatch?.[1];
+```
+
+#### PayLah
 ```js
 "subject:(Fwd: Transaction Alerts) 'paylah.alert@dbs.com'"
 ```
 
-## YouTrip
+##### Merchants
+extract from `To: ...`
+```js
+const merchantMatch = normalizedBody.match(/^to:\s*([a-z0-9 .&()-]+)$/im);
+```
+- `^` matches start of line and `$` matches end of line because of `m` flag
+- `i` case-insensitive matching
+- `/s*` matches 0 or more whitespace characters
+- capture group `([a-z0-9 .&()-]+)` allows merchant names, numbers and business suffixes
+- does not match forwarding email with `<>` or `@`
+  
+#### YouTrip
