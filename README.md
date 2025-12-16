@@ -134,9 +134,12 @@ OR
 - [x] Refactor email fetching logic
 - [x] Parse email transactions
   - [x] PayLah
-  - [ ] YouTrip
+  - [x] YouTrip
 - [x] Refactor email parsing logic
 - [x] Regex to extract transaction data
+- [x] Implement categorisation service
+- [ ] Configure SQLite DB and Drizzle ORM
+  - [ ] Test user categorization rules
 - [ ] Display PayLah transaction data in UI
 - [ ] Display YouTrip transaction data in UI
 - [ ] Google verification center stuff

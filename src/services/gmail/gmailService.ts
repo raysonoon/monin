@@ -1,5 +1,6 @@
 import { htmlToText } from "html-to-text";
 import { providers } from "./providers";
+import { categorizeMerchant } from "../categorizationService";
 import type {
   GmailHeader,
   GmailPayload,
@@ -77,11 +78,18 @@ const parseEmail = async (
     // Use the provider's specific parse logic
     const extractedData = provider.parse(emailData, normalizedBody);
 
+    // Handle null merchants safely by defaulting to "Unknown"
+    const merchantName = extractedData.merchant || "Unknown";
+
+    // Determine category based on the extracted merchant name
+    const category = categorizeMerchant(merchantName);
+
     const parsedTransaction: Transaction = {
       source: provider.id,
       emailId: messageId,
       date,
       ...extractedData, // Merge the specific extracted fields
+      category: category,
     } as Transaction;
 
     console.log("Parsed Transaction:", parsedTransaction);

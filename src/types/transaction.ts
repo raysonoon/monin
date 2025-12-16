@@ -1,4 +1,5 @@
 import type { GmailMessage } from "./gmail";
+import type { Category } from "./category";
 
 export interface Transaction {
   source: string;
@@ -6,7 +7,7 @@ export interface Transaction {
   amount: string | null; // 2dp string
   currency: string | undefined;
   date: string; // ISO string
-  category?: string;
+  category: Category;
   emailId: string;
 }
 

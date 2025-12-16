@@ -21,7 +21,7 @@ export const providers: TransactionProvider[] = [
       console.log("amountMatch:", amountMatch);
 
       return {
-        merchant: merchantMatch?.[1]?.trim() || "Unknown Merchant",
+        merchant: merchantMatch?.[1]?.trim() || "Unknown",
         currency: amountMatch?.[1] || "SGD",
         amount: amountMatch
           ? parseFloat(amountMatch[2].replace(",", "")).toFixed(2)
@@ -45,7 +45,7 @@ export const providers: TransactionProvider[] = [
 
       if (!txnMatch) {
         return {
-          merchant: "YouTrip Transaction (Parse Failed)",
+          merchant: "Unknown",
           currency: "SGD",
           amount: null,
         };
