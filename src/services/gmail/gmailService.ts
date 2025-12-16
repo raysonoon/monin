@@ -1,3 +1,4 @@
+import { htmlToText } from "html-to-text";
 import { providers } from "./providers";
 import type {
   GmailHeader,
@@ -69,11 +70,10 @@ const parseEmail = async (
       : new Date().toISOString();
     console.log("Date extracted from header:", date);
 
-    // Decode Body (Reusable helper)
-    const rawBody = getBody(emailData.payload); // Your existing getBody function
-    const decodedBody = decodeBase64(rawBody); // Your existing decode logic
-    const normalizedBody = normalizeText(decodedBody); // Your existing cleanup logic
-
+    const rawBody = getBody(emailData.payload);
+    const decodedBody = decodeBase64(rawBody);
+    const plainBody = htmlToPlain(decodedBody);
+    const normalizedBody = normalizeText(plainBody);
     // Use the provider's specific parse logic
     const extractedData = provider.parse(emailData, normalizedBody);
 
@@ -126,7 +126,11 @@ const getBody = (payload: GmailPayload): string | undefined => {
   if (payload.body && payload.body.data) return payload.body.data;
   if (payload.parts && Array.isArray(payload.parts)) {
     for (const part of payload.parts) {
-      if (part.mimeType === "text/plain" && part.body && part.body.data) {
+      if (
+        (part.mimeType === "text/html" || part.mimeType === "text/plain") &&
+        part.body &&
+        part.body.data
+      ) {
         return part.body.data;
       }
     }
@@ -135,12 +139,25 @@ const getBody = (payload: GmailPayload): string | undefined => {
 };
 
 // Decode Base64URL rawBody
-// Regex to convert Base64URL --> Base64 then ASCII --> binary
 const decodeBase64 = (body: string | undefined): string => {
   if (!body) return "";
+  // Regex to convert Base64URL --> Base64 then ASCII --> binary
   return atob(body.replace(/-/g, "+").replace(/_/g, "/"));
 };
 
+// Converts text/html to text/plain
+const htmlToPlain = (html: string): string => {
+  return htmlToText(html, {
+    wordwrap: false,
+    preserveNewlines: true,
+    selectors: [
+      { selector: "img", format: "skip" },
+      { selector: "a", options: { ignoreHref: true } },
+    ],
+  });
+};
+
+// Normalize text for easier regex
 const normalizeText = (text: string): string => {
   return (
     text

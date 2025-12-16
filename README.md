@@ -89,11 +89,12 @@ OR
 2. Search & filter
 3. Recurring transactions
 4. Budget goals
-5. Support Outlook emails
+5. Import old transaction email data, csv, excel
+6. Support Outlook emails
 
 ## TODOs
 
-- [ ] Define features
+- [x] Define features
 - [x] Create figma design
   - [x] Login page
   - [x] Home page
@@ -121,7 +122,7 @@ OR
     - [x] Create a test protected API (at least for native) 
     - [x] Link to Gmail APIs
     - [ ] Refresh logic for googleAccessToken (in gcloud?)
-    - [ ] Parse an existing transaction email
+    - [x] Parse an existing transaction email
     - [ ] Match SettingsScreen UI
 - [x] Gmail API restricted scope verification
 - [x] Create new Gmail and set up email forwarding

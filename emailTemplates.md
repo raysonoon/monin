@@ -18,6 +18,10 @@ Various emails templates to normalise and parse transaction data from merchants
   - `parts`: Array of parts (each may have its own mimeType, body, etc.)
   - `body`: May contain the message body (often empty if parts exist)
 
+### Gmail forwarding
+- Manually forward will include forwarding address
+- Auto-forward shows original sender and recipient
+  
 ### Data encoding
 #### Base64
 - Encode binary data into ASCII characters for text-based systems like emails and URLs
