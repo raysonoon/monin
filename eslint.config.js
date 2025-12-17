@@ -13,6 +13,7 @@ module.exports = defineConfig([
         "error",
         {
           endOfLine: "auto",
+          trailingComma: "es5",
         },
       ],
     },
