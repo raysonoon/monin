@@ -138,8 +138,11 @@ OR
 - [x] Refactor email parsing logic
 - [x] Regex to extract transaction data
 - [x] Implement categorisation service
-- [ ] Configure SQLite DB and Drizzle ORM
-  - [ ] Test user categorization rules
+- [x] Configure SQLite DB and Drizzle ORM
+- [ ] Integrate user categorization rules with SQLite
+  - [ ] Transfer hard-coded categories and rules into database
+  - [ ] Test transactions are automatically categorized
+- [ ] UI to add category and categorization rules
 - [ ] Display PayLah transaction data in UI
 - [ ] Display YouTrip transaction data in UI
 - [ ] Google verification center stuff
