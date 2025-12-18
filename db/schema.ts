@@ -34,4 +34,6 @@ export const categorizationRules = sqliteTable("categorization_rules", {
 });
 
 export type Category = typeof categories.$inferSelect;
+export type NewCategory = typeof categories.$inferInsert;
 export type CategorizationRule = typeof categorizationRules.$inferSelect;
+export type NewCategorizationRule = typeof categorizationRules.$inferInsert;

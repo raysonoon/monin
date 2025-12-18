@@ -10,6 +10,7 @@ import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import migrations from "../../drizzle/migrations";
 import * as SplashScreen from "expo-splash-screen";
 import { expoDb, db, DATABASE_NAME } from "../../db/client";
+import { seedDatabase } from "../../db/seed";
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -21,15 +22,16 @@ export default function RootLayout() {
   useDrizzleStudio(expoDb);
 
   useEffect(() => {
-    console.log("Migration State - Success:", success, "Error:", error);
-    // Hide Splash Screen once DB is ready (or if an error occurs)
-    if (success || error) {
-      if (error) console.error("Migration Error:", error);
-      SplashScreen.hideAsync();
-    }
-  }, [success, error]);
+    const init = async () => {
+      if (success) {
+        await seedDatabase();
+        await SplashScreen.hideAsync();
+      }
+    };
+    init();
+  }, [success]);
 
-  // Fallback UI
+  // Fallback Loading UI
   if (!success && !error) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -40,6 +42,8 @@ export default function RootLayout() {
   }
 
   if (error) {
+    console.error("Database Error:", error);
+    SplashScreen.hideAsync();
     return (
       <View
         style={{
@@ -50,10 +54,7 @@ export default function RootLayout() {
         }}
       >
         <Text style={{ color: "red", fontSize: 16, textAlign: "center" }}>
-          Migration Error: {error.message ?? "Unknown Error"}
-        </Text>
-        <Text style={{ marginTop: 10, fontSize: 12, color: "#555" }}>
-          Check console logs for details.
+          Database Error: {error.message ?? "Unknown Error"}
         </Text>
       </View>
     );
