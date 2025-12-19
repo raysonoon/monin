@@ -1,0 +1,1 @@
+ALTER TABLE `categorization_rules` ADD `is_user_created` integer DEFAULT false;

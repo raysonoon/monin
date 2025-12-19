@@ -1,6 +1,6 @@
 import { htmlToText } from "html-to-text";
 import { providers } from "./providers";
-import { categorizeMerchant } from "../categorizationService";
+import { categorizationService } from "../categorizationService";
 import type {
   GmailHeader,
   GmailPayload,
@@ -15,7 +15,7 @@ import type { Transaction, TransactionProvider } from "../../types/transaction";
  */
 const listEmailsForProvider = async (
   provider: TransactionProvider,
-  googleAccessToken: string,
+  googleAccessToken: string
 ): Promise<string[]> => {
   try {
     const response = await fetch(
@@ -23,12 +23,12 @@ const listEmailsForProvider = async (
       {
         method: "GET",
         headers: { Authorization: `Bearer ${googleAccessToken}` },
-      },
+      }
     );
 
     if (!response.ok)
       throw new Error(
-        `Failed to fetch email list for ${provider.name}. Status: ${response.status}`,
+        `Failed to fetch email list for ${provider.name}. Status: ${response.status}`
       );
 
     const data: GmailMessagesList = await response.json();
@@ -47,17 +47,17 @@ const listEmailsForProvider = async (
 const parseEmail = async (
   messageId: string,
   provider: TransactionProvider,
-  googleAccessToken: string,
+  googleAccessToken: string
 ): Promise<Transaction | null> => {
   try {
     const response = await fetch(
       `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,
-      { headers: { Authorization: `Bearer ${googleAccessToken}` } },
+      { headers: { Authorization: `Bearer ${googleAccessToken}` } }
     );
 
     if (!response.ok) {
       throw new Error(
-        `Failed to fetch message ${messageId}. Status: ${response.status}`,
+        `Failed to fetch message ${messageId}. Status: ${response.status}`
       );
     }
 
@@ -82,7 +82,7 @@ const parseEmail = async (
     const merchantName = extractedData.merchant || "Unknown";
 
     // Determine category based on the extracted merchant name
-    const category = categorizeMerchant(merchantName);
+    const category = categorizationService.categorizeMerchant(merchantName);
 
     const parsedTransaction: Transaction = {
       source: provider.id,
@@ -105,8 +105,10 @@ const parseEmail = async (
  * @returns A promise that resolves to an array of all successfully parsed Transaction objects.
  */
 export const syncAllTransactions = async (
-  googleAccessToken: string,
+  googleAccessToken: string
 ): Promise<Transaction[]> => {
+  await categorizationService.init(); // Initialise rules from DB into memory before loop
+
   const allTransactions: Transaction[] = [];
   for (const provider of providers) {
     console.log(`Processing provider: ${provider.name}...`);
@@ -115,7 +117,7 @@ export const syncAllTransactions = async (
       const transaction = await parseEmail(
         messageId,
         provider,
-        googleAccessToken,
+        googleAccessToken
       );
       if (transaction) {
         allTransactions.push(transaction);

@@ -1,7 +1,7 @@
 import { db } from "./client";
 import { categories, categorizationRules } from "./schema";
 
-// 1. Define your default Categories (Name, Icon, Color)
+// Define your default Categories (Name, Icon, Color)
 const DEFAULT_CATEGORIES = [
   { name: "Food & Dining", icon: "🍔", color: "#FF5733" },
   { name: "Transport", icon: "🚕", color: "#3498DB" },
@@ -11,37 +11,44 @@ const DEFAULT_CATEGORIES = [
   { name: "Transfers", icon: "💸", color: "#95A5A6" },
 ];
 
-// 2. Define your Rules (Keyword -> Category Name mapping)
+// Define your Rules (Keyword -> Category Name mapping)
 // We use the Category Name here to look up the ID later
 const GLOBAL_RULES_DATA = [
+  // Specific rules
+  { keyword: "GRABFOOD", category: "Food & Dining", matchType: "contains" },
+  { keyword: "GRABCAR", category: "Transport", matchType: "contains" },
+  { keyword: "GRABHITCH", category: "Transport", matchType: "contains" },
+
   // Transport
-  { keyword: "GRAB", category: "Transport" },
-  { keyword: "GOJEK", category: "Transport" },
-  { keyword: "CDG TAXI", category: "Transport" },
-  { keyword: "SIMPLYGO", category: "Transport" }, // Bus/Train
+  { keyword: "GRAB", category: "Transport", matchType: "contains" }, // Generic fallback
+  { keyword: "GOJEK", category: "Transport", matchType: "contains" },
+  { keyword: "CDG TAXI", category: "Transport", matchType: "contains" },
+  { keyword: "SIMPLYGO", category: "Transport", matchType: "contains" }, // Bus/Train
 
   // Food
-  { keyword: "MCDONALDS", category: "Food & Dining" },
-  { keyword: "KFC", category: "Food & Dining" },
-  { keyword: "STARBUCKS", category: "Food & Dining" },
-  { keyword: "FOODPANDA", category: "Food & Dining" },
-  { keyword: "DELIVEROO", category: "Food & Dining" },
+  { keyword: "MCDONALDS", category: "Food & Dining", matchType: "contains" },
+  { keyword: "KFC", category: "Food & Dining", matchType: "contains" },
+  { keyword: "STARBUCKS", category: "Food & Dining", matchType: "contains" },
+  { keyword: "FOODPANDA", category: "Food & Dining", matchType: "contains" },
+  { keyword: "DELIVEROO", category: "Food & Dining", matchType: "contains" },
 
   // Groceries
-  { keyword: "NTUC", category: "Groceries" },
-  { keyword: "SHENG SIONG", category: "Groceries" },
-  { keyword: "COLD STORAGE", category: "Groceries" },
-  { keyword: "GIANT", category: "Groceries" },
+  { keyword: "NTUC", category: "Groceries", matchType: "contains" },
+  { keyword: "SHENG SIONG", category: "Groceries", matchType: "contains" },
+  { keyword: "COLD STORAGE", category: "Groceries", matchType: "contains" },
+  { keyword: "GIANT", category: "Groceries", matchType: "contains" },
 
   // Shopping
-  { keyword: "SHOPEE", category: "Shopping" },
-  { keyword: "LAZADA", category: "Shopping" },
-  { keyword: "AMAZON", category: "Shopping" },
-  { keyword: "UNIQLO", category: "Shopping" },
+  { keyword: "SHOPEE", category: "Shopping", matchType: "contains" },
+  { keyword: "LAZADA", category: "Shopping", matchType: "contains" },
+  { keyword: "AMAZON", category: "Shopping", matchType: "contains" },
+  { keyword: "UNIQLO", category: "Shopping", matchType: "contains" },
+
+  // Entertainment
+  { keyword: "NETFLIX", category: "Entertainment", matchType: "exact" },
 
   // Transfers
-  { keyword: "PAYNOW", category: "Transfers" },
-  { keyword: "PAYLAH", category: "Transfers" },
+  { keyword: "MOBILE ENDING", category: "Transfers", matchType: "contains" },
 ];
 
 export const seedDatabase = async () => {
@@ -85,12 +92,12 @@ export const seedDatabase = async () => {
         keyword: rule.keyword,
         categoryId: catId,
         matchType: "contains" as const, // Defaulting to your schema's enum
+        isUserCreated: false, // False for global rules
       };
     }).filter((r) => r !== null); // Remove any nulls if categories were missing
 
     // Insert Rules
     if (rulesToInsert.length > 0) {
-      // @ts-ignore - Typescript might complain about nulls despite filter, ignore safe here
       await db.insert(categorizationRules).values(rulesToInsert);
       console.log(`Inserted ${rulesToInsert.length} categorization rules.`);
     }

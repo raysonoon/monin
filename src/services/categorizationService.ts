@@ -1,70 +1,103 @@
-import { Category, CategoryRule } from "../types/category";
+import { db } from "../../db/client";
+import { categories, categorizationRules } from "../../db/schema";
+import { eq, desc, sql } from "drizzle-orm";
 
-// Static Global Rules (Layer 1)
-const GLOBAL_RULES: CategoryRule[] = [
-  { id: "g1", keyword: "GRAB", category: "Transport", isUserCreated: false },
-  { id: "g2", keyword: "GOJEK", category: "Transport", isUserCreated: false },
-  {
-    id: "g3",
-    keyword: "MCDONALDS",
-    category: "Food & Dining",
-    isUserCreated: false,
-  },
-  { id: "g4", keyword: "KFC", category: "Food & Dining", isUserCreated: false },
-  { id: "g5", keyword: "NTUC", category: "Groceries", isUserCreated: false },
-  {
-    id: "g6",
-    keyword: "SHENG SIONG",
-    category: "Groceries",
-    isUserCreated: false,
-  },
-  {
-    id: "g7",
-    keyword: "MOBILE ENDING",
-    category: "Transfer",
-    isUserCreated: false,
-  }, // Default for PayLah P2P
-];
-
-// Fetch User Rules (Layer 2) - Mock implementation
-// In reality, fetch this from your DB/Storage
-let userRules: CategoryRule[] = [];
-
-export const categorizeMerchant = (merchantRaw: string): Category => {
-  const normalizedMerchant = merchantRaw.toUpperCase();
-
-  // Step A: Check User Rules FIRST (They override global rules)
-  const userMatch = userRules.find((rule) =>
-    normalizedMerchant.includes(rule.keyword.toUpperCase()),
-  );
-  if (userMatch) return userMatch.category;
-
-  // Step B: Check Global Rules
-  const globalMatch = GLOBAL_RULES.find((rule) =>
-    normalizedMerchant.includes(rule.keyword.toUpperCase()),
-  );
-  if (globalMatch) return globalMatch.category;
-
-  // Step C: Fallback
-  return "Uncategorized";
+type InMemoryRule = {
+  keyword: string;
+  categoryName: string;
+  matchType: "contains" | "exact" | "starts_with";
 };
 
-// The "Learn" Function
-export const addUserRule = (merchantName: string, category: Category) => {
-  // Simple heuristic: Create a rule based on the first 2 words
-  // or the whole string if it's short.
-  // "GENERATION HAWK 2 PTE LTD" -> Keyword: "GENERATION HAWK"
-  const words = merchantName.split(" ");
-  const keyword = words.length > 2 ? `${words[0]} ${words[1]}` : merchantName;
+class CategorizationService {
+  private rulesCache: InMemoryRule[] = [];
+  private isInitialized = false;
 
-  const newRule: CategoryRule = {
-    id: Date.now().toString(),
-    keyword: keyword,
-    category,
-    isUserCreated: true,
-  };
+  async init() {
+    if (this.isInitialized) return;
 
-  userRules.push(newRule);
-  // TODO: Save 'userRules' to persistent storage
-  console.log(`Learned: "${keyword}" is now ${category}`);
-};
+    const result = await db
+      .select({
+        keyword: categorizationRules.keyword,
+        matchType: categorizationRules.matchType,
+        categoryName: categories.name,
+      })
+      .from(categorizationRules)
+      .innerJoin(categories, eq(categorizationRules.categoryId, categories.id))
+      // PRIORITY 1: User-created rules override global rules
+      // PRIORITY 2: Longest keywords first (Specificity)
+      .orderBy(
+        desc(categorizationRules.isUserCreated),
+        sql`length(${categorizationRules.keyword}) DESC`
+      );
+
+    this.rulesCache = result as InMemoryRule[];
+    this.isInitialized = true;
+  }
+
+  categorizeMerchant(rawMerchant: string): string {
+    if (!this.isInitialized) return "Uncategorized";
+    const normalizedMerchant = rawMerchant.toUpperCase();
+    console.log("Rules cache:", this.rulesCache);
+
+    const match = this.rulesCache.find((rule) => {
+      const ruleKey = rule.keyword.toUpperCase();
+
+      switch (rule.matchType) {
+        case "exact":
+          return normalizedMerchant === ruleKey;
+
+        case "starts_with":
+          return normalizedMerchant.startsWith(ruleKey);
+
+        case "contains":
+        default:
+          return normalizedMerchant.includes(ruleKey);
+      }
+    });
+
+    console.log(
+      `For merchant ${normalizedMerchant}, category ${match?.categoryName}`
+    );
+    return match ? match.categoryName : "Uncategorized";
+  }
+
+  /**
+   * PERSISTENCE: This replaces the old array.push logic.
+   * It saves to DB and updates the cache.
+   * @todo UI to add user rule, and trigger on user changing category
+   */
+  async addUserRule(
+    merchantName: string,
+    categoryId: number,
+    categoryName: string
+  ) {
+    // Generate Keyword (Heuristic: First 2 words)
+    const words = merchantName.trim().split(/\s+/);
+    const keyword = words.length > 2 ? `${words[0]} ${words[1]}` : merchantName;
+    const normalizedKeyword = keyword.toUpperCase();
+
+    try {
+      // Save to SQLite
+      await db.insert(categorizationRules).values({
+        keyword: normalizedKeyword,
+        categoryId: categoryId,
+        matchType: "contains", // Default user-created rules to "contains" matchType
+        isUserCreated: true,
+      });
+
+      // Update In-Memory Cache immediately
+      // We 'unshift' so this new rule is at the start of the array (priority)
+      this.rulesCache.unshift({
+        keyword: normalizedKeyword,
+        categoryName: categoryName,
+        matchType: "contains",
+      });
+
+      console.log(`✅ Learned: "${normalizedKeyword}" is now ${categoryName}`);
+    } catch (error) {
+      console.error("Failed to save user rule:", error);
+    }
+  }
+}
+
+export const categorizationService = new CategorizationService();

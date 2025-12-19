@@ -141,8 +141,10 @@ OR
 - [x] Configure SQLite DB and Drizzle ORM
 - [ ] Integrate user categorization rules with SQLite
   - [x] Transfer hard-coded categories and rules into database
-  - [ ] Test transactions are automatically categorized
+  - [x] Test transactions are automatically categorized
 - [ ] UI to add category and categorization rules
+- [ ] Add providers into database
+- [ ] UI to add custom provider
 - [ ] Display PayLah transaction data in UI
 - [ ] Display YouTrip transaction data in UI
 - [ ] Google verification center stuff

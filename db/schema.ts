@@ -27,6 +27,9 @@ export const categorizationRules = sqliteTable("categorization_rules", {
     .references(() => categories.id, { onDelete: "cascade" }) // If category is deleted, delete the rule
     .notNull(),
 
+  // To separate user and global rules
+  isUserCreated: integer("is_user_created", { mode: "boolean" }).default(false),
+
   // Metadata
   createdAt: integer("created_at", { mode: "timestamp" }).default(
     sql`(current_timestamp)`
