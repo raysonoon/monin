@@ -4,9 +4,9 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 // Categories Table (e.g., Food, Transport)
 export const categories = sqliteTable("categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  icon: text("icon"), // e.g., "🍔"
-  color: text("color"), // e.g., "#FF0000"
+  name: text("name").notNull().unique(),
+  icon: text("icon").notNull().default("📦"), // e.g., "🍔"
+  color: text("color").notNull().default("#ccc"), // e.g., "#FF0000"
 });
 
 // Rules Table (The "Brain" of your categorization)

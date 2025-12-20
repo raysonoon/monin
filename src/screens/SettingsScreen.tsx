@@ -8,10 +8,15 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/auth";
 import { useGmail } from "../hooks/useGmail";
 import { BASE_URL } from "../../utils/constants";
+import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import { db } from "../../db/client";
+import { categories as categoriesSchema, Category } from "../../db/schema";
+import CategoryDialog from "../components/CategoryDialog";
+import Feather from "@expo/vector-icons/Feather";
 
 export const SettingsScreen = () => {
   const {
@@ -29,9 +34,24 @@ export const SettingsScreen = () => {
 
   const [data, setData] = useState();
 
+  // Dialog state
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
   const [autoSync, setAutoSync] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(false);
   const [manualApproval, setManualApproval] = useState(true);
+
+  // Handlers
+  const handleAddCategory = () => {
+    setEditingCategory(null); // Clear data for "Add Mode"
+    setDialogVisible(true);
+  };
+
+  const handleEditCategory = (cat: Category) => {
+    setEditingCategory(cat); // Set data for "Edit Mode"
+    setDialogVisible(true);
+  };
 
   // Dummy data
   const recognizedSenders = [
@@ -43,7 +63,22 @@ export const SettingsScreen = () => {
     { name: "Spotify", category: "Subscriptions" },
   ];
 
-  const [senderSelected, setSenderSelected] = useState({});
+  const { data: categories } = useLiveQuery(
+    db.select().from(categoriesSchema),
+    []
+  );
+
+  useEffect(() => {
+    console.log("Categories updated in UI:", categories?.length);
+  }, [categories]);
+
+  // Optional: Loading state (though local DB is usually instant)
+  if (!categories)
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
 
   const getProtectedData = async () => {
     const response = await fetchWithAuth(`${BASE_URL}/api/protected/data`, {
@@ -160,6 +195,44 @@ export const SettingsScreen = () => {
         ))}
       </View>
 
+      <View style={styles.section}>
+        <View style={styles.headerRow}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Categories</Text>
+            <Text style={styles.subtitle}>
+              Create and manage expense categories
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.button}>
+            <Feather name="plus" size={16} color="white" />
+            <Text style={styles.buttonText} onPress={handleAddCategory}>
+              Add Category
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {categories.map((cat) => (
+          <View key={cat.name} style={styles.categoryBox}>
+            <View
+              style={[
+                styles.categoryColor,
+                { backgroundColor: cat.color ?? "#ccc" },
+              ]}
+            />
+            <Text style={styles.categoryName}>{cat.name}</Text>
+            <TouchableOpacity onPress={() => handleEditCategory(cat)}>
+              <Feather name="edit-2" size={16} color="black" />
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      {/* Category Dialog */}
+      <CategoryDialog
+        visible={dialogVisible}
+        onClose={() => setDialogVisible(false)}
+        categoryToEdit={editingCategory}
+      />
+
       {/* Advanced Settings */}
       <View style={styles.section}>
         <Text style={styles.title}>Advanced Settings</Text>
@@ -193,11 +266,47 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
+  subtitle: {
+    fontSize: 16,
+    color: "#717182",
+  },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginVertical: 8,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start", // Align items to top to handle multi-line subtitles
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  titleContainer: {
+    flex: 1, // Takes up remaining space
+    marginRight: 10,
+  },
+  categoryBox: {
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    padding: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#9d9da5ff",
+  },
+  categoryColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+    marginRight: 10,
+  },
+  categoryName: {
+    flex: 1,
+    fontSize: 16,
   },
   input: {
     borderWidth: 1,
@@ -207,11 +316,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   button: {
-    backgroundColor: "#4a90e2",
+    backgroundColor: "#000000ff",
     padding: 12,
+    flexDirection: "row",
     alignItems: "center",
+    gap: 6,
     borderRadius: 8,
-    marginTop: 10,
   },
   buttonText: {
     color: "white",

@@ -139,11 +139,14 @@ OR
 - [x] Regex to extract transaction data
 - [x] Implement categorisation service
 - [x] Configure SQLite DB and Drizzle ORM
-- [ ] Integrate user categorization rules with SQLite
+- [x] Integrate user categorization rules with SQLite
   - [x] Transfer hard-coded categories and rules into database
   - [x] Test transactions are automatically categorized
-- [ ] UI to add category and categorization rules
+- [x] UI to add category
+- [ ] Add delete existing category feature
+- [ ] UI to add categorization rules
 - [ ] Add providers into database
+- [ ] Separate bank logic from merchant logic (?)
 - [ ] UI to add custom provider
 - [ ] Display PayLah transaction data in UI
 - [ ] Display YouTrip transaction data in UI
