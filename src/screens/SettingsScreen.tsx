@@ -220,7 +220,7 @@ export const SettingsScreen = () => {
             />
             <Text style={styles.categoryName}>{cat.name}</Text>
             <TouchableOpacity onPress={() => handleEditCategory(cat)}>
-              <Feather name="edit-2" size={16} color="black" />
+              <Feather name="edit-2" size={20} color="black" />
             </TouchableOpacity>
           </View>
         ))}

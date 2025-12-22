@@ -62,7 +62,7 @@ export default function CategoryDialog({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert("Validation", "Please enter a category name.");
+      Alert.alert("Missing Category", "Please enter a category name.");
       return;
     }
 
@@ -91,10 +91,42 @@ export default function CategoryDialog({
       onClose();
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to save category. Name might be duplicate.");
+      Alert.alert(
+        "Error",
+        "Failed to save category. Name might be a duplicate."
+      );
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDelete = async () => {
+    if (!categoryToEdit) return;
+    Alert.alert(
+      "Delete Category",
+      "Are you sure you want to delete this category?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              await db
+                .delete(categories)
+                .where(eq(categories.id, categoryToEdit.id));
+              onClose();
+            } catch (error) {
+              console.error(error);
+              Alert.alert("Error", "Failed to delete category.");
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -103,7 +135,7 @@ export default function CategoryDialog({
         <View style={styles.overlay}>
           <Animated.View
             entering={FadeIn.duration(400)} // Custom fade-in speed
-            exiting={FadeOut.duration(300)} // Custom fade-out speed
+            exiting={FadeOut.duration(100)} // Custom fade-out speed
           >
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
               <View style={styles.dialogContainer}>
@@ -162,27 +194,44 @@ export default function CategoryDialog({
 
                 {/* Action Buttons */}
                 <View style={styles.footer}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={onClose}
-                    disabled={isSubmitting}
+                  <View style={{ flexDirection: "row" }}>
+                    {categoryToEdit && (
+                      <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={handleDelete}
+                        disabled={isSubmitting}
+                      >
+                        <Text style={styles.deleteButtonText}>Delete</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      gap: 12,
+                    }}
                   >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.createButton}
-                    onPress={handleSave}
-                    disabled={isSubmitting}
-                  >
-                    <Text style={styles.createButtonText}>
-                      {isSubmitting
-                        ? "Saving..."
-                        : categoryToEdit
-                          ? "Save Changes"
-                          : "Create"}
-                    </Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={onClose}
+                      disabled={isSubmitting}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.createButton}
+                      onPress={handleSave}
+                      disabled={isSubmitting}
+                    >
+                      <Text style={styles.createButtonText}>
+                        {isSubmitting
+                          ? "Saving..."
+                          : categoryToEdit
+                            ? "Save"
+                            : "Create"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </TouchableWithoutFeedback>
@@ -280,8 +329,17 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
+    justifyContent: "space-between",
+  },
+  deleteButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: "#fee2e2",
+  },
+  deleteButtonText: {
+    color: "#b91c1c",
+    fontWeight: "600",
   },
   cancelButton: {
     paddingVertical: 10,
