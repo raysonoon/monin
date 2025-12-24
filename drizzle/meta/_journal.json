@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1765944541049,
-      "tag": "0000_black_omega_sentinel",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1766131998538,
-      "tag": "0001_glorious_wild_pack",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1766226240103,
-      "tag": "0002_overjoyed_firebird",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1766227686687,
-      "tag": "0003_unknown_doctor_faustus",
+      "when": 1766588332550,
+      "tag": "0000_glorious_the_captain",
       "breakpoints": true
     }
   ]

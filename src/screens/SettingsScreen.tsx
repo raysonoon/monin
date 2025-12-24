@@ -14,8 +14,14 @@ import { useGmail } from "../hooks/useGmail";
 import { BASE_URL } from "../../utils/constants";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { db } from "../../db/client";
-import { categories as categoriesSchema, Category } from "../../db/schema";
+import {
+  categories as categoriesSchema,
+  Category,
+  categorizationRules as catRulesSchema,
+  CategorizationRule,
+} from "../../db/schema";
 import CategoryDialog from "../components/CategoryDialog";
+import MerchantDialog from "../components/MerchantDialog";
 import Feather from "@expo/vector-icons/Feather";
 
 export const SettingsScreen = () => {
@@ -34,9 +40,14 @@ export const SettingsScreen = () => {
 
   const [data, setData] = useState();
 
-  // Dialog state
-  const [dialogVisible, setDialogVisible] = useState(false);
+  // Category dialog state
+  const [categoryDialogVisible, setCategoryDialogVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  // Merchant dialog state
+  const [merchantDialogVisible, setMerchantDialogVisible] = useState(false);
+  const [editingMerchant, setEditingMerchant] =
+    useState<CategorizationRule | null>(null);
 
   const [autoSync, setAutoSync] = useState(true);
   const [skipDuplicates, setSkipDuplicates] = useState(false);
@@ -45,12 +56,22 @@ export const SettingsScreen = () => {
   // Handlers
   const handleAddCategory = () => {
     setEditingCategory(null); // Clear data for "Add Mode"
-    setDialogVisible(true);
+    setCategoryDialogVisible(true);
   };
 
   const handleEditCategory = (cat: Category) => {
     setEditingCategory(cat); // Set data for "Edit Mode"
-    setDialogVisible(true);
+    setCategoryDialogVisible(true);
+  };
+
+  const handleAddMerchant = () => {
+    setEditingMerchant(null); // Clear data for "Add Mode"
+    setMerchantDialogVisible(true);
+  };
+
+  const handleEditMerchant = (catRule: CategorizationRule) => {
+    setEditingMerchant(catRule); // Set data for "Edit Mode"
+    setMerchantDialogVisible(true);
   };
 
   // Dummy data
@@ -64,7 +85,7 @@ export const SettingsScreen = () => {
   ];
 
   const { data: categories } = useLiveQuery(
-    db.select().from(categoriesSchema),
+    db.select().from(categoriesSchema), // categoriesSchema refers to table definition, while categories is actual data from DB
     []
   );
 
@@ -72,8 +93,20 @@ export const SettingsScreen = () => {
     console.log("Categories updated in UI:", categories?.length);
   }, [categories]);
 
+  const { data: categorizationRules } = useLiveQuery(
+    db.select().from(catRulesSchema), // catRulesSchema refers to table definition for categorization rules
+    []
+  );
+
+  useEffect(() => {
+    console.log(
+      "Categorization rules updated in UI:",
+      categorizationRules?.length
+    );
+  }, [categorizationRules]);
+
   // Optional: Loading state (though local DB is usually instant)
-  if (!categories)
+  if (!categories || !categorizationRules)
     return (
       <View>
         <Text>Loading...</Text>
@@ -228,9 +261,51 @@ export const SettingsScreen = () => {
 
       {/* Category Dialog */}
       <CategoryDialog
-        visible={dialogVisible}
-        onClose={() => setDialogVisible(false)}
+        visible={categoryDialogVisible}
+        onClose={() => setCategoryDialogVisible(false)}
         categoryToEdit={editingCategory}
+      />
+
+      <View style={styles.section}>
+        <View style={styles.headerRow}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Merchants</Text>
+            <Text style={styles.subtitle}>
+              Configure merchant categorization rules for automatic expense
+              tracking
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.button} onPress={handleAddMerchant}>
+            <Feather name="plus" size={16} color="white" />
+            <Text style={styles.buttonText}>Add Rule</Text>
+          </TouchableOpacity>
+        </View>
+        {categorizationRules.map((merchant) => {
+          const category = categories.find(
+            (cat) => cat.id === merchant.categoryId
+          );
+          return (
+            <View key={merchant.keyword} style={styles.categoryBox}>
+              <View style={styles.merchantContainer}>
+                <Text style={styles.categoryName}>{merchant.keyword}</Text>
+                {/* Category Subtitle */}
+                <Text style={styles.subtitle}>
+                  {category ? category.name : "Uncategorized"}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => handleEditMerchant(merchant)}>
+                <Feather name="edit-2" size={20} color="black" />
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Merchant Dialog */}
+      <MerchantDialog
+        visible={merchantDialogVisible}
+        onClose={() => setMerchantDialogVisible(false)}
+        merchantToEdit={editingMerchant}
       />
 
       {/* Advanced Settings */}
@@ -307,6 +382,9 @@ const styles = StyleSheet.create({
   categoryName: {
     flex: 1,
     fontSize: 16,
+  },
+  merchantContainer: {
+    flexDirection: "column",
   },
   input: {
     borderWidth: 1,

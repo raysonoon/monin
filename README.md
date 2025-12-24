@@ -143,13 +143,24 @@ OR
   - [x] Transfer hard-coded categories and rules into database
   - [x] Test transactions are automatically categorized
 - [x] UI to add category
-- [ ] Add delete existing category feature
-- [ ] UI to add categorization rules
+- [x] Add delete existing category feature
+- [x] UI to add categorization rules
+- [ ] editRule, deleteRule methods for CategorizationService
 - [ ] Add providers into database
-- [ ] Separate bank logic from merchant logic (?)
+- [ ] Separate providers logic from merchant logic
 - [ ] UI to add custom provider
+- [ ] Custom provider regex logic (paste emailBlock and txnBlock)
+- [ ] Gmail watch mode
+  - [ ] Run email parsing on receiving new email
+- [ ] Add manual review for transactions with undefined categories/auto-approve disabled (TBC)
+  - [ ] Prompt user via push notification
+- [ ] Store and cache transaction data
 - [ ] Display PayLah transaction data in UI
 - [ ] Display YouTrip transaction data in UI
+  - [ ] Sort transaction data by date
+- [ ] Transaction dialog
+  - [ ] Manual
+  - [ ] Triggered by push notification
 - [ ] Google verification center stuff
 - [ ] Try, catch for async fetch calls
 - [ ] Email parsing error handling
@@ -157,6 +168,11 @@ OR
 - [ ] Frontend
 - [ ] Backend
 - [ ] Deploy
+
+## BUGS
+- [ ] Database timestamp not mapped to local time
+- [ ] Placeholder text missing in category, merchant dialogs
+- [ ] UI action button spacing for MerchantDialog
 
 ### FEATURE TODO
 

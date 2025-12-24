@@ -37,7 +37,6 @@ class CategorizationService {
   categorizeMerchant(rawMerchant: string): string {
     if (!this.isInitialized) return "Uncategorized";
     const normalizedMerchant = rawMerchant.toUpperCase();
-    console.log("Rules cache:", this.rulesCache);
 
     const match = this.rulesCache.find((rule) => {
       const ruleKey = rule.keyword.toUpperCase();
@@ -79,7 +78,7 @@ class CategorizationService {
     try {
       // Save to SQLite
       await db.insert(categorizationRules).values({
-        keyword: normalizedKeyword,
+        keyword: keyword,
         categoryId: categoryId,
         matchType: "contains", // Default user-created rules to "contains" matchType
         isUserCreated: true,

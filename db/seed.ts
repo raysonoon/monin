@@ -15,40 +15,40 @@ const DEFAULT_CATEGORIES = [
 // We use the Category Name here to look up the ID later
 const GLOBAL_RULES_DATA = [
   // Specific rules
-  { keyword: "GRABFOOD", category: "Food & Dining", matchType: "contains" },
-  { keyword: "GRABCAR", category: "Transport", matchType: "contains" },
-  { keyword: "GRABHITCH", category: "Transport", matchType: "contains" },
+  { keyword: "GrabFood", category: "Food & Dining", matchType: "contains" },
+  { keyword: "GrabCar", category: "Transport", matchType: "contains" },
+  { keyword: "GrabHitch", category: "Transport", matchType: "contains" },
 
   // Transport
-  { keyword: "GRAB", category: "Transport", matchType: "contains" }, // Generic fallback
-  { keyword: "GOJEK", category: "Transport", matchType: "contains" },
-  { keyword: "CDG TAXI", category: "Transport", matchType: "contains" },
-  { keyword: "SIMPLYGO", category: "Transport", matchType: "contains" }, // Bus/Train
+  { keyword: "Grab", category: "Transport", matchType: "contains" }, // Generic fallback
+  { keyword: "Gojek", category: "Transport", matchType: "contains" },
+  { keyword: "CDG Taxi", category: "Transport", matchType: "contains" },
+  { keyword: "SimplyGo", category: "Transport", matchType: "contains" }, // Bus/Train
 
   // Food
-  { keyword: "MCDONALDS", category: "Food & Dining", matchType: "contains" },
+  { keyword: "McDonalds", category: "Food & Dining", matchType: "contains" },
   { keyword: "KFC", category: "Food & Dining", matchType: "contains" },
-  { keyword: "STARBUCKS", category: "Food & Dining", matchType: "contains" },
-  { keyword: "FOODPANDA", category: "Food & Dining", matchType: "contains" },
-  { keyword: "DELIVEROO", category: "Food & Dining", matchType: "contains" },
+  { keyword: "Starbucks", category: "Food & Dining", matchType: "contains" },
+  { keyword: "Foodpanda", category: "Food & Dining", matchType: "contains" },
+  { keyword: "Deliveroo", category: "Food & Dining", matchType: "contains" },
 
   // Groceries
   { keyword: "NTUC", category: "Groceries", matchType: "contains" },
-  { keyword: "SHENG SIONG", category: "Groceries", matchType: "contains" },
-  { keyword: "COLD STORAGE", category: "Groceries", matchType: "contains" },
-  { keyword: "GIANT", category: "Groceries", matchType: "contains" },
+  { keyword: "Sheng Siong", category: "Groceries", matchType: "contains" },
+  { keyword: "Cold Storage", category: "Groceries", matchType: "contains" },
+  { keyword: "Giant", category: "Groceries", matchType: "contains" },
 
   // Shopping
-  { keyword: "SHOPEE", category: "Shopping", matchType: "contains" },
-  { keyword: "LAZADA", category: "Shopping", matchType: "contains" },
-  { keyword: "AMAZON", category: "Shopping", matchType: "contains" },
-  { keyword: "UNIQLO", category: "Shopping", matchType: "contains" },
+  { keyword: "Shopee", category: "Shopping", matchType: "contains" },
+  { keyword: "Lazada", category: "Shopping", matchType: "contains" },
+  { keyword: "Amazon", category: "Shopping", matchType: "contains" },
+  { keyword: "Uniqlo", category: "Shopping", matchType: "contains" },
 
   // Entertainment
-  { keyword: "NETFLIX", category: "Entertainment", matchType: "exact" },
+  { keyword: "Netflix", category: "Entertainment", matchType: "exact" },
 
   // Transfers
-  { keyword: "MOBILE ENDING", category: "Transfers", matchType: "contains" },
+  { keyword: "Mobile ending", category: "Transfers", matchType: "contains" },
 ];
 
 export const seedDatabase = async () => {

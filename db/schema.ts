@@ -23,9 +23,9 @@ export const categorizationRules = sqliteTable("categorization_rules", {
   }).default("contains"),
 
   // Foreign Key: Which category applies?
-  categoryId: integer("category_id")
-    .references(() => categories.id, { onDelete: "cascade" }) // If category is deleted, delete the rule
-    .notNull(),
+  categoryId: integer("category_id").references(() => categories.id, {
+    onDelete: "cascade",
+  }), // If category is deleted, delete the rule
 
   // To separate user and global rules
   isUserCreated: integer("is_user_created", { mode: "boolean" }).default(false),
