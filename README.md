@@ -147,9 +147,11 @@ OR
 - [x] UI to add category
 - [x] Add delete existing category feature
 - [x] UI to add categorization rules
-- [ ] *editRule, deleteRule methods for CategorizationService
-- [ ] *Add providers into database
+- [x] *editRule, deleteRule methods for CategorizationService
+- [x] *Add providers into database
 - [ ] *Separate providers logic from merchant logic
+  - [ ] GmailParser utils
+  - [ ] Fetch providers from DB
 - [ ] *UI to add custom provider
 - [ ] *Custom provider regex logic (paste emailBlock and txnBlock)
 - [ ] Gmail watch mode

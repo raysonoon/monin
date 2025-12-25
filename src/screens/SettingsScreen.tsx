@@ -75,13 +75,10 @@ export const SettingsScreen = () => {
   };
 
   // Dummy data
-  const recognizedSenders = [
-    { name: "Amazon", category: "Shopping" },
-    { name: "Uber", category: "Transportation" },
-    { name: "Starbucks", category: "Dining" },
-    { name: "Netflix", category: "Subscriptions" },
-    { name: "DoorDash", category: "Dining" },
-    { name: "Spotify", category: "Subscriptions" },
+  const paymentProviders = [
+    { name: "PayLah!", description: "DBS digital wallet" },
+    { name: "YouTrip", description: "Multi-currency wallet" },
+    { name: "Revolut", description: "Multi-currency wallet" },
   ];
 
   const { data: categories } = useLiveQuery(
@@ -211,19 +208,35 @@ export const SettingsScreen = () => {
         <TextInput placeholder="Last 7 days" style={styles.input} />
       </View>
 
-      {/* Recognized Senders */}
+      {/* Payment Providers */}
       <View style={styles.section}>
-        <Text style={styles.title}>Recognized Senders</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Payment Providers</Text>
+            <Text style={styles.subtitle}>
+              Enable transaction tracking from supported payment providers
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.button}>
+            <Feather name="plus" size={16} color="white" />
+            <Text style={styles.buttonText}>Add Provider</Text>
+          </TouchableOpacity>
+        </View>
 
-        {recognizedSenders.map((sender, i) => (
-          <View key={i} style={styles.row}>
-            <Text>{sender.name}</Text>
-            {/* <Switch
-              value={senderSelected[sender.name] || false}
-              onValueChange={(v) =>
-                setSenderSelected({ ...senderSelected, [sender.name]: v })
-              }
-            /> */}
+        {paymentProviders.map((provider) => (
+          <View key={provider.name} style={styles.categoryBox}>
+            <View style={styles.providerContainer}>
+              <View
+                style={[styles.providerIcon, { backgroundColor: "#ccc" }]}
+              />
+              <View style={styles.providerText}>
+                <Text style={styles.categoryName}>{provider.name}</Text>
+                <Text>{provider.description}</Text>
+              </View>
+            </View>
+            <TouchableOpacity>
+              <Feather name="edit-2" size={20} color="black" />
+            </TouchableOpacity>
           </View>
         ))}
       </View>
@@ -361,6 +374,19 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1, // Takes up remaining space
     marginRight: 10,
+  },
+  providerIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 2,
+    marginRight: 16,
+  },
+  providerText: {
+    flexDirection: "column",
+  },
+  providerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   categoryBox: {
     backgroundColor: "#fff",

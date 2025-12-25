@@ -15,3 +15,11 @@ CREATE TABLE `categorization_rules` (
 	`created_at` integer DEFAULT (current_timestamp),
 	FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON UPDATE no action ON DELETE cascade
 );
+--> statement-breakpoint
+CREATE TABLE `providers` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`description` text,
+	`icon` text DEFAULT '📧' NOT NULL,
+	`config` text NOT NULL
+);

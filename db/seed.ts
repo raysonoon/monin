@@ -1,5 +1,6 @@
 import { db } from "./client";
-import { categories, categorizationRules } from "./schema";
+import { providers, categories, categorizationRules } from "./schema";
+import { PROVIDER_TEMPLATES } from "../src/services/gmail/templates";
 
 // Define your default Categories (Name, Icon, Color)
 const DEFAULT_CATEGORIES = [
@@ -55,14 +56,29 @@ export const seedDatabase = async () => {
   try {
     console.log("🌱 Checking database state...");
 
-    // Check if data already exists to prevent duplicates
-    const existing = await db.select().from(categories).limit(1);
+    // Check if data already exists to prevent duplicates --> could be improved
+    const existing = await db.select().from(providers).limit(1);
     if (existing.length > 0) {
       console.log("✅ Database already seeded. Skipping.");
       return;
     }
 
     console.log("🌱 Database empty. Starting seed...");
+
+    // Insert Providers
+    const insertedProviders = await db
+      .insert(providers)
+      .values(
+        PROVIDER_TEMPLATES.map((template) => ({
+          name: template.name,
+          description: template.description,
+          icon: template.icon,
+          config: JSON.stringify(template.defaultConfig),
+        }))
+      )
+      .returning();
+
+    console.log(`Inserted ${insertedProviders.length} providers.`);
 
     // Insert Categories and capture their generated IDs
     const insertedCategories = await db

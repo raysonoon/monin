@@ -1,6 +1,15 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
+// Providers Table (Customizable providers for transaction parsing)
+export const providers = sqliteTable("providers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  icon: text("icon").notNull().default("📧"), // Default icon for providers
+  config: text("config").notNull(), // stores defaultConfig
+});
+
 // Categories Table (e.g., Food, Transport)
 export const categories = sqliteTable("categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -36,6 +45,8 @@ export const categorizationRules = sqliteTable("categorization_rules", {
   ),
 });
 
+export type Provider = typeof providers.$inferSelect;
+export type NewProvider = typeof providers.$inferInsert;
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type CategorizationRule = typeof categorizationRules.$inferSelect;
