@@ -91,6 +91,8 @@ OR
 4. Budget goals
 5. Import old transaction email data, csv, excel
 6. Support Outlook emails
+7. OCR
+8. Cash and cashless payment integration
 
 ## TODOs
 
@@ -145,29 +147,30 @@ OR
 - [x] UI to add category
 - [x] Add delete existing category feature
 - [x] UI to add categorization rules
-- [ ] editRule, deleteRule methods for CategorizationService
-- [ ] Add providers into database
-- [ ] Separate providers logic from merchant logic
-- [ ] UI to add custom provider
-- [ ] Custom provider regex logic (paste emailBlock and txnBlock)
+- [ ] *editRule, deleteRule methods for CategorizationService
+- [ ] *Add providers into database
+- [ ] *Separate providers logic from merchant logic
+- [ ] *UI to add custom provider
+- [ ] *Custom provider regex logic (paste emailBlock and txnBlock)
 - [ ] Gmail watch mode
   - [ ] Run email parsing on receiving new email
-- [ ] Add manual review for transactions with undefined categories/auto-approve disabled (TBC)
+- [ ] *Add section for transactions with undefined categories for manual review
+- [ ] Add manual review for transactions with auto-approve disabled
   - [ ] Prompt user via push notification
-- [ ] Store and cache transaction data
-- [ ] Display PayLah transaction data in UI
-- [ ] Display YouTrip transaction data in UI
-  - [ ] Sort transaction data by date
-- [ ] Transaction dialog
-  - [ ] Manual
-  - [ ] Triggered by push notification
-- [ ] Google verification center stuff
+- [ ] *Store and cache transaction data
+- [ ] *Display transaction data in UI (graphs, list, etc)
+  - [ ] PayLah
+  - [ ] YouTrip
+  - [ ] Custom
+- [ ] *Sort transaction data by date
+- [ ] *Manually open transaction dialog from button in home screen
+- [ ] Trigger transaction dialog via push notification
+- [ ] *Push notification for daily reminders
+- [ ] *Google verification center stuff
 - [ ] Try, catch for async fetch calls
 - [ ] Email parsing error handling
 - [x] Configure Expo router
-- [ ] Frontend
-- [ ] Backend
-- [ ] Deploy
+- [ ] *Deploy
 
 ## BUGS
 - [ ] Database timestamp not mapped to local time

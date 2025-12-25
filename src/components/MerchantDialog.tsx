@@ -80,26 +80,25 @@ export default function CategoryDialog({
     setIsSubmitting(true);
 
     try {
+      const categoryName =
+        categoryList.find((cat) => cat.id === selectedCategoryId)?.name ?? "";
+
       if (merchantToEdit) {
         // --- UPDATE EXISTING ---
-        await db
-          .update(categorizationRules)
-          .set({
-            keyword: name.trim(),
-            categoryId: selectedCategoryId,
-          })
-          .where(eq(categorizationRules.id, merchantToEdit.id));
+        await categorizationService.editUserRule(
+          merchantToEdit.id,
+          name.trim(),
+          selectedCategoryId,
+          categoryName
+        );
       } else {
         // --- CREATE NEW ---
-        const categoryName =
-          categoryList.find((cat) => cat.id === selectedCategoryId)?.name ?? "";
         await categorizationService.addUserRule(
           name.trim(),
           selectedCategoryId,
           categoryName
         );
       }
-      console.log("DB Insert Success"); // Verify this prints in console
       onClose();
     } catch (error) {
       console.error(error);
@@ -125,9 +124,7 @@ export default function CategoryDialog({
           onPress: async () => {
             setIsSubmitting(true);
             try {
-              await db
-                .delete(categorizationRules)
-                .where(eq(categorizationRules.id, merchantToEdit.id));
+              await categorizationService.deleteUserRule(merchantToEdit.id);
               onClose();
             } catch (error) {
               console.error(error);
