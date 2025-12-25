@@ -77,13 +77,6 @@ export const SettingsScreen = () => {
     setMerchantDialogVisible(true);
   };
 
-  // Dummy data
-  // const paymentProviders = [
-  //   { name: "PayLah!", description: "DBS digital wallet" },
-  //   { name: "YouTrip", description: "Multi-currency wallet" },
-  //   { name: "Revolut", description: "Multi-currency wallet" },
-  // ];
-
   const { data: providers } = useLiveQuery(
     db.select().from(providersSchema), // categoriesSchema refers to table definition, while categories is actual data from DB
     []

@@ -149,9 +149,9 @@ OR
 - [x] UI to add categorization rules
 - [x] *editRule, deleteRule methods for CategorizationService
 - [x] *Add providers into database
-- [ ] *Separate providers logic from merchant logic
-  - [ ] GmailParser utils
-  - [ ] Fetch providers from DB
+- [x] *Separate providers logic from merchant logic
+  - [x] GmailParser utils
+  - [x] Fetch providers from DB
 - [ ] *UI to add custom provider
 - [ ] *Custom provider regex logic (paste emailBlock and txnBlock)
 - [ ] Gmail watch mode
@@ -177,6 +177,7 @@ OR
 ## BUGS
 - [ ] Database timestamp not mapped to local time
 - [ ] Placeholder text missing in category, merchant dialogs
+- [ ] Placeholder image for custom providers
 - [ ] UI action button spacing for MerchantDialog
 
 ### FEATURE TODO
