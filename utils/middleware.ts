@@ -21,7 +21,7 @@ export type AuthUser = {
  * Note for devs: Technically, it's not a middleware in the traditional sense. This function acts as a higher-order function that adds authentication to API route handlers.
  */
 export function withAuth<T extends Response>(
-  handler: (req: Request, user: AuthUser) => Promise<T>,
+  handler: (req: Request, user: AuthUser) => Promise<T>
 ) {
   return async (req: Request): Promise<T | Response> => {
     try {
@@ -44,7 +44,7 @@ export function withAuth<T extends Response>(
               acc[key.trim()] = value;
               return acc;
             },
-            {} as Record<string, string>,
+            {} as Record<string, string>
           );
 
           // Get token from cookie
@@ -56,7 +56,7 @@ export function withAuth<T extends Response>(
       if (!token) {
         return Response.json(
           { error: "Authentication required" },
-          { status: 401 },
+          { status: 401 }
         );
       }
 
@@ -66,14 +66,14 @@ export function withAuth<T extends Response>(
       if (!jwtSecret) {
         return Response.json(
           { error: "Server misconfiguration" },
-          { status: 500 },
+          { status: 500 }
         );
       }
 
       // Verify and decode the token
       const decoded = await jose.jwtVerify(
         token,
-        new TextEncoder().encode(jwtSecret), // jose requires you to encode the secret key manually
+        new TextEncoder().encode(jwtSecret) // jose requires you to encode the secret key manually
       );
 
       // Call the handler with the authenticated user
@@ -89,7 +89,7 @@ export function withAuth<T extends Response>(
         console.error("Auth error:", error);
         return Response.json(
           { error: "Authentication failed" },
-          { status: 500 },
+          { status: 500 }
         );
       }
     }

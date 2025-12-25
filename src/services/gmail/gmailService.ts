@@ -1,5 +1,5 @@
 import { htmlToText } from "html-to-text";
-import { providers } from "./providers";
+import { parseEmailWithProvider } from "../../../utils/gmailParser";
 import { categorizationService } from "../categorizationService";
 import type {
   GmailHeader,
@@ -8,18 +8,21 @@ import type {
   GmailMessage,
 } from "../../types/gmail";
 import type { Transaction, TransactionProvider } from "../../types/transaction";
+import { db } from "../../../db/client";
+import { providers as providersSchema, Provider } from "../../../db/schema";
 
 /**
  * Lists email message IDs matching the provider's specific query.
  * @returns A promise that resolves to an array of message IDs.
  */
 const listEmailsForProvider = async (
-  provider: TransactionProvider,
+  provider: Provider,
   googleAccessToken: string
 ): Promise<string[]> => {
+  const config = JSON.parse(provider.config);
   try {
     const response = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(provider.gmailQuery)}`,
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(config.gmailQuery)}`,
       {
         method: "GET",
         headers: { Authorization: `Bearer ${googleAccessToken}` },
@@ -46,7 +49,7 @@ const listEmailsForProvider = async (
  */
 const parseEmail = async (
   messageId: string,
-  provider: TransactionProvider,
+  provider: Provider,
   googleAccessToken: string
 ): Promise<Transaction | null> => {
   try {
@@ -75,17 +78,19 @@ const parseEmail = async (
     const decodedBody = decodeBase64(rawBody);
     const plainBody = htmlToPlain(decodedBody);
     const normalizedBody = normalizeText(plainBody);
+
     // Use the provider's specific parse logic
-    const extractedData = provider.parse(emailData, normalizedBody);
+    // const extractedData = provider.parse(emailData, normalizedBody);
+    const extractedData = parseEmailWithProvider(normalizedBody, provider);
 
     // Handle null merchants safely by defaulting to "Unknown"
-    const merchantName = extractedData.merchant || "Unknown";
+    const merchantName = extractedData?.merchant ?? "Unknown";
 
     // Determine category based on the extracted merchant name
     const category = categorizationService.categorizeMerchant(merchantName);
 
     const parsedTransaction: Transaction = {
-      source: provider.id,
+      source: provider.name,
       emailId: messageId,
       date,
       ...extractedData, // Merge the specific extracted fields
@@ -109,10 +114,15 @@ export const syncAllTransactions = async (
 ): Promise<Transaction[]> => {
   await categorizationService.init(); // Initialise rules from DB into memory before loop
 
+  const providers = await db.select().from(providersSchema);
+
   const allTransactions: Transaction[] = [];
+
   for (const provider of providers) {
     console.log(`Processing provider: ${provider.name}...`);
+
     const messageIds = await listEmailsForProvider(provider, googleAccessToken); // Gets IDs
+
     for (const messageId of messageIds) {
       const transaction = await parseEmail(
         messageId,

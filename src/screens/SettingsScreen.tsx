@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
+import { Image } from "expo-image";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/auth";
 import { useGmail } from "../hooks/useGmail";
@@ -15,6 +16,8 @@ import { BASE_URL } from "../../utils/constants";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { db } from "../../db/client";
 import {
+  providers as providersSchema,
+  Provider,
   categories as categoriesSchema,
   Category,
   categorizationRules as catRulesSchema,
@@ -75,11 +78,20 @@ export const SettingsScreen = () => {
   };
 
   // Dummy data
-  const paymentProviders = [
-    { name: "PayLah!", description: "DBS digital wallet" },
-    { name: "YouTrip", description: "Multi-currency wallet" },
-    { name: "Revolut", description: "Multi-currency wallet" },
-  ];
+  // const paymentProviders = [
+  //   { name: "PayLah!", description: "DBS digital wallet" },
+  //   { name: "YouTrip", description: "Multi-currency wallet" },
+  //   { name: "Revolut", description: "Multi-currency wallet" },
+  // ];
+
+  const { data: providers } = useLiveQuery(
+    db.select().from(providersSchema), // categoriesSchema refers to table definition, while categories is actual data from DB
+    []
+  );
+
+  useEffect(() => {
+    console.log("Providers updated in UI:", providers?.length);
+  }, [providers]);
 
   const { data: categories } = useLiveQuery(
     db.select().from(categoriesSchema), // categoriesSchema refers to table definition, while categories is actual data from DB
@@ -223,12 +235,16 @@ export const SettingsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {paymentProviders.map((provider) => (
+        {providers.map((provider) => (
           <View key={provider.name} style={styles.categoryBox}>
             <View style={styles.providerContainer}>
-              <View
-                style={[styles.providerIcon, { backgroundColor: "#ccc" }]}
-              />
+              <View style={styles.providerIcon}>
+                <Image
+                  style={styles.image}
+                  source={{ uri: provider.icon }}
+                  contentFit="cover"
+                />
+              </View>
               <View style={styles.providerText}>
                 <Text style={styles.categoryName}>{provider.name}</Text>
                 <Text>{provider.description}</Text>
@@ -376,10 +392,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   providerIcon: {
-    width: 20,
-    height: 20,
+    width: 30,
+    height: 30,
     borderRadius: 2,
     marginRight: 16,
+  },
+  image: {
+    flex: 1,
   },
   providerText: {
     flexDirection: "column",

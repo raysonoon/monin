@@ -1,6 +1,5 @@
 export const PROVIDER_TEMPLATES = [
   {
-    id: "dbs_paylah",
     name: "DBS PayLah!",
     description: "DBS digital wallet",
     icon: "dbs-paylah.png", // or text/emoji
@@ -15,7 +14,6 @@ export const PROVIDER_TEMPLATES = [
     },
   },
   {
-    id: "youtrip",
     name: "YouTrip",
     description: "Multi-currency wallet",
     icon: "youtrip.png",
