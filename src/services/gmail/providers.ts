@@ -22,7 +22,7 @@ export const providers: TransactionProvider[] = [
 
       return {
         merchant: merchantMatch?.[1]?.trim() || "Unknown",
-        currency: amountMatch?.[1] || "SGD",
+        currency: amountMatch?.[1] || "?",
         amount: amountMatch
           ? parseFloat(amountMatch[2].replace(",", "")).toFixed(2)
           : null,
@@ -46,7 +46,7 @@ export const providers: TransactionProvider[] = [
       if (!txnMatch) {
         return {
           merchant: "Unknown",
-          currency: "SGD",
+          currency: "?",
           amount: null,
         };
       }

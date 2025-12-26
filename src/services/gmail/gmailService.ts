@@ -7,7 +7,7 @@ import type {
   GmailMessagesList,
   GmailMessage,
 } from "../../types/gmail";
-import type { Transaction, TransactionProvider } from "../../types/transaction";
+import type { Transaction } from "../../types/transaction";
 import { db } from "../../../db/client";
 import { providers as providersSchema, Provider } from "../../../db/schema";
 
@@ -179,11 +179,8 @@ const htmlToPlain = (html: string): string => {
 
 // Normalize text for easier regex
 const normalizeText = (text: string): string => {
-  return (
-    text
-      .replace(/\r\n/g, "\n") // Windows line break --> Unix line break
-      .replace(/\n+/g, "\n") // Multiple newlines into one
-      // .replace(/\s+/g, " ") // Multiple spaces into one
-      .trim() // Remove leading, trailing spaces
-  );
+  return text
+    .replace(/\r\n/g, "\n") // Windows line break --> Unix line break
+    .replace(/\n+/g, "\n") // Multiple newlines into one
+    .trim(); // Remove leading, trailing spaces
 };

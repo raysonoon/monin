@@ -1,6 +1,10 @@
 # Email templates
-Various emails templates to normalise and parse transaction data from merchants
+Various emails templates to normalise and parse transaction data from payment providers
 
+## System templates
+- DBS PayLah
+- YouTrip
+  
 ## Encode
 ```js
 `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent("subject:(Fwd: Transaction Alerts) 'paylah.alert@dbs.com'")}`
@@ -113,3 +117,40 @@ const merchantMatch = normalizedBody.match(/^to:\s*([a-z0-9 .&()-]+)$/im);
 - does not match forwarding email with `<>` or `@`
   
 #### YouTrip
+
+## Custom templates
+- User to paste full email body & transaction block
+
+### Email body
+
+### Transaction block
+
+#### `generateAutoConfigs(transactionBlock)`
+Infers:
+- merchant name
+- amount
+- currency
+- regex patterns (`merchantRegex`, `amountRegex`) that can later be stored and reused to extract the same info from similar transactions
+- hints if it fails
+
+#### `escapeRegExp`
+- Special regex syntax like `.` or `$` should be escaped and treated as literal strings
+
+#### Normalise transaction block
+- Splits the text into lines
+- Removes extra spaces
+- Removes empty lines
+  
+#### Merchant heuristic
+- Matches keywords like `Merchant`, `Paid to`, `purchase on`, `payment to` then capture whatever comes after the merchant name
+- Falls back to first line as merchant
+
+#### Amount heuristic
+- Matches currency: S$, SGD, $, numbers with commas and optional decimals (up to 2)
+- E.g. Amount: S$12.50, Total 25.00, Paid $9
+- If amount match succeeds, extracts currency and removes commas from numbers
+  - Currency is standardised based on currency map
+  - Unknown currency display as ?
+
+#### Hints
+- Tips for user to paste correct transaction block

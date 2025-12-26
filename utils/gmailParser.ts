@@ -53,14 +53,33 @@ export const parseEmailWithProvider = (
     config.amountGroupIndex
   );
 
-  // Post-processing (Cleaning up numbers)
+  // Post-processing (Cleaning up currency & numbers)
+  const currency = normalizeCurrencyCode(rawCurrency);
+
   const amount = rawAmount
     ? parseFloat(rawAmount.replace(/,/g, "")).toFixed(2)
     : null;
 
   return {
     merchant: rawMerchant || "Unknown",
-    currency: rawCurrency || "?",
+    currency: currency,
     amount: amount,
   };
+};
+
+// Helper functions to standardise currency extraction
+const CURRENCY_MAP: Record<string, string> = {
+  S$: "SGD",
+  $: "?", // Unknown currency
+  SGD: "SGD",
+  US$: "USD",
+  USD: "USD",
+  "€": "EUR",
+  "£": "GBP",
+};
+
+const normalizeCurrencyCode = (rawSymbol: string | null): string => {
+  if (!rawSymbol) return "?"; // Default fallback
+  const upperSymbol = rawSymbol.trim().toUpperCase();
+  return CURRENCY_MAP[upperSymbol] || upperSymbol;
 };

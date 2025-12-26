@@ -93,6 +93,7 @@ OR
 6. Support Outlook emails
 7. OCR
 8. Cash and cashless payment integration
+9. Gemini LLM integration to generate regex patterns from different email templates
 
 ## TODOs
 

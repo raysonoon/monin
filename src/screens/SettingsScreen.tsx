@@ -23,6 +23,7 @@ import {
   categorizationRules as catRulesSchema,
   CategorizationRule,
 } from "../../db/schema";
+import ProviderDialog from "../components/ProviderDialog";
 import CategoryDialog from "../components/CategoryDialog";
 import MerchantDialog from "../components/MerchantDialog";
 import Feather from "@expo/vector-icons/Feather";
@@ -43,6 +44,10 @@ export const SettingsScreen = () => {
 
   const [data, setData] = useState();
 
+  // Provider dialog state
+  const [providerDialogVisible, setProviderDialogVisible] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+
   // Category dialog state
   const [categoryDialogVisible, setCategoryDialogVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -57,6 +62,16 @@ export const SettingsScreen = () => {
   const [manualApproval, setManualApproval] = useState(true);
 
   // Handlers
+  const handleAddProvider = () => {
+    setEditingProvider(null); // Clear data for "Add Mode"
+    setProviderDialogVisible(true);
+  };
+
+  const handleEditProvider = (prov: Provider) => {
+    setEditingProvider(prov); // Set data for "Edit Mode"
+    setProviderDialogVisible(true);
+  };
+
   const handleAddCategory = () => {
     setEditingCategory(null); // Clear data for "Add Mode"
     setCategoryDialogVisible(true);
@@ -222,7 +237,7 @@ export const SettingsScreen = () => {
               Enable transaction tracking from supported payment providers
             </Text>
           </View>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity style={styles.button} onPress={handleAddProvider}>
             <Feather name="plus" size={16} color="white" />
             <Text style={styles.buttonText}>Add Provider</Text>
           </TouchableOpacity>
@@ -243,12 +258,19 @@ export const SettingsScreen = () => {
                 <Text>{provider.description}</Text>
               </View>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => handleEditProvider(provider)}>
               <Feather name="edit-2" size={20} color="black" />
             </TouchableOpacity>
           </View>
         ))}
       </View>
+
+      {/* Provider Dialog */}
+      <ProviderDialog
+        visible={providerDialogVisible}
+        onClose={() => setProviderDialogVisible(false)}
+        providerToEdit={editingProvider}
+      />
 
       <View style={styles.section}>
         <View style={styles.headerRow}>
