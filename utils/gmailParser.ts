@@ -37,11 +37,6 @@ export const parseEmailWithProvider = (
     textToScan = emailBody.slice(start, end);
   }
 
-  if (provider.name === "Revolut" || provider.name === "YouTrip")
-    console.log(
-      `${config.bodyStartMarker}, ${config.bodyEndMarker}, start ${start}, end ${end}, scanning text ${textToScan}`
-    );
-
   // Extract data using stored Regex
   const rawMerchant = extract(
     textToScan,

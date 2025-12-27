@@ -155,8 +155,8 @@ OR
   - [x] GmailParser utils
   - [x] Fetch providers from DB
 - [x] *UI to add custom provider
-- [ ] *Custom provider regex logic (paste emailBlock and txnBlock)
-  - [ ] Fix Revolut email parsing
+- [x] *Custom provider regex logic (paste emailBlock and txnBlock)
+  - [x] Fix Revolut email parsing
 - [ ] Gmail watch mode
   - [ ] Run email parsing on receiving new email
 - [ ] Add section for transactions with undefined categories for manual review
