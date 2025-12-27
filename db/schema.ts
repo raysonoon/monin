@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, real, integer } from "drizzle-orm/sqlite-core";
+import { TransactionType } from "../src/types/transaction";
 
 // Providers Table (Customizable providers for transaction parsing)
 export const providers = sqliteTable("providers", {
@@ -45,9 +46,37 @@ export const categorizationRules = sqliteTable("categorization_rules", {
   ),
 });
 
+// Transactions Table
+export const transactions = sqliteTable("transactions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  emailId: text("email_id").notNull().unique(), // Unique Gmail Message ID
+  providerId: integer("provider_id").references(() => providers.id, {
+    onDelete: "cascade",
+  }),
+
+  // Data extracted
+  merchant: text("merchant").notNull(),
+  amount: real("amount").notNull(),
+  currency: text("currency").notNull(),
+  date: text("date").notNull(),
+
+  // Categorization
+  category: text("category").notNull(),
+  source: text("source").notNull(),
+
+  type: text("type").$type<TransactionType>().notNull(),
+
+  // Metadata
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(current_timestamp)`
+  ),
+});
+
 export type Provider = typeof providers.$inferSelect;
 export type NewProvider = typeof providers.$inferInsert;
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type CategorizationRule = typeof categorizationRules.$inferSelect;
 export type NewCategorizationRule = typeof categorizationRules.$inferInsert;
+export type Transaction = typeof transactions.$inferSelect;
+export type NewTransaction = typeof transactions.$inferInsert;

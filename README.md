@@ -89,12 +89,13 @@ OR
 2. Search & filter
 3. Recurring transactions
 4. Budget goals
-5. Import old transaction email data, csv, excel
+5. Import old transaction email data, csv, excel (get proper timestamp from forwarded emails)
 6. Support Outlook emails
 7. OCR
 8. Automatically classify income/expense
 9. Cash and cashless payment integration
-10. Gemini LLM integration to generate regex patterns from different email templates
+10. Bulk insert: uploading 100+ transaction data at one time
+11. Gemini LLM integration to generate regex patterns from different email templates
 
 ## TODOs
 

@@ -1,14 +1,18 @@
 import type { GmailMessage } from "./gmail";
 import type { Category } from "./category";
 
+export type TransactionType = "income" | "expense";
+
 export interface Transaction {
-  source: string;
-  merchant: string | undefined;
-  amount: string | null; // 2dp string
+  emailId: string;
+  providerId?: number;
+  merchant: string | null;
+  amount: number | null;
   currency: string | undefined;
   date: string; // ISO string
   category: Category;
-  emailId: string;
+  source: string;
+  type: TransactionType;
 }
 
 export interface TransactionProvider {

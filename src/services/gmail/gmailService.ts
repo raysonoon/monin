@@ -8,9 +8,13 @@ import type {
   GmailMessagesList,
   GmailMessage,
 } from "../../types/gmail";
-import type { Transaction } from "../../types/transaction";
 import { db } from "../../../db/client";
-import { providers as providersSchema, Provider } from "../../../db/schema";
+import {
+  providers as providersSchema,
+  Provider,
+  transactions,
+  NewTransaction,
+} from "../../../db/schema";
 
 /**
  * Lists email message IDs matching the provider's specific query.
@@ -52,7 +56,7 @@ const parseEmail = async (
   messageId: string,
   provider: Provider,
   googleAccessToken: string
-): Promise<Transaction | null> => {
+): Promise<NewTransaction | null> => {
   try {
     const response = await fetch(
       `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`,
@@ -90,13 +94,17 @@ const parseEmail = async (
     // Determine category based on the extracted merchant name
     const category = categorizationService.categorizeMerchant(merchantName);
 
-    const parsedTransaction: Transaction = {
-      source: provider.name,
+    const parsedTransaction: NewTransaction = {
       emailId: messageId,
+      providerId: provider.id,
+      merchant: extractedData?.merchant ?? "Unknown",
+      amount: extractedData?.amount ? Number(extractedData.amount) : 0,
+      currency: extractedData?.currency ?? "?",
       date,
-      ...extractedData, // Merge the specific extracted fields
       category: category,
-    } as Transaction;
+      source: provider.name,
+      type: "expense",
+    };
 
     console.log("Parsed Transaction:", parsedTransaction);
     return parsedTransaction;
@@ -112,12 +120,18 @@ const parseEmail = async (
  */
 export const syncAllTransactions = async (
   googleAccessToken: string
-): Promise<Transaction[]> => {
+): Promise<NewTransaction[]> => {
   await categorizationService.init(); // Initialise rules from DB into memory before loop
 
   const providers = await db.select().from(providersSchema);
 
-  const allTransactions: Transaction[] = [];
+  // Get a list of all email IDs already in DB
+  const existingRecords = await db
+    .select({ emailId: transactions.emailId })
+    .from(transactions);
+  const existingIds = new Set(existingRecords.map((r) => r.emailId)); // Set lookup O(1) complexity
+
+  const allTransactions: NewTransaction[] = [];
 
   for (const provider of providers) {
     console.log(`Processing provider: ${provider.name}...`);
@@ -125,12 +139,22 @@ export const syncAllTransactions = async (
     const messageIds = await listEmailsForProvider(provider, googleAccessToken); // Gets IDs
 
     for (const messageId of messageIds) {
+      // Skip parsing email if emailId already in set
+      if (existingIds.has(messageId)) {
+        console.log(`Skipping already parsed email: ${messageId}`);
+        continue;
+      }
       const transaction = await parseEmail(
         messageId,
         provider,
         googleAccessToken
       );
+
       if (transaction) {
+        // 3. Save to DB immediately (or collect and bulk insert)
+        await db.insert(transactions).values({
+          ...transaction,
+        });
         allTransactions.push(transaction);
       }
     }
