@@ -17,30 +17,37 @@ import {
   categories as categoriesSchema,
   Category,
 } from "../../db/schema";
+import TransactionDialog from "../components/TransactionDialog";
 import {
-  getCategorySpending,
   getMonthlyCashFlow,
+  getCategorySpending,
+  getCategoryColorMap,
 } from "../services/transaction/transactionHelper";
 import segoe from "../../assets/fonts/segoeui.ttf";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-const insights = [
-  {
-    icon: <Ionicons name="trending-up" size={28} color="#16a34a" />,
-    text: "Your income increased by 8% this month.",
-  },
-  {
-    icon: <Ionicons name="trending-down" size={28} color="#dc2626" />,
-    text: "You spent 12% more on dining out.",
-  },
-];
-
 export const HomeScreen = () => {
   const font = useFont(segoe, 14);
 
   const router = useRouter();
+
+  // Transaction dialog state
+  const [transactionDialogVisible, setTransactionDialogVisible] =
+    useState(false);
+  const [editingTransaction, setEditingTransaction] =
+    useState<Transaction | null>(null);
+
+  const handleAddTransaction = () => {
+    setEditingTransaction(null); // Clear data for "Add Mode"
+    setTransactionDialogVisible(true);
+  };
+
+  const handleEditTransaction = (txn: Transaction) => {
+    setEditingTransaction(txn); // Set data for "Edit Mode"
+    setTransactionDialogVisible(true);
+  };
 
   const { data: transactions = [] } = useLiveQuery(
     db.select().from(transactionsSchema)
@@ -58,10 +65,19 @@ export const HomeScreen = () => {
     return chartData.filter((d) => d.income > 0 || d.expense > 0);
   }, [chartData]);
 
+  // Reusable category color map
+  const colorMap = useMemo(() => getCategoryColorMap(categories), [categories]);
+
   const categorySpending = useMemo(
-    () => getCategorySpending(transactions, categories),
-    [transactions, categories]
+    () => getCategorySpending(transactions, colorMap),
+    [transactions, colorMap]
   );
+
+  const recentTransactions = useMemo(() => {
+    return [...transactions]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+  }, [transactions]);
 
   // Summary logic
   const netCashFlow = useMemo(
@@ -175,144 +191,212 @@ export const HomeScreen = () => {
   }, [chartData]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.header}>Financial Dashboard</Text>
-        <TouchableOpacity
-          style={styles.settingsContainer}
-          onPress={() => router.navigate("/settings")}
-        >
-          <Ionicons name="settings-outline" size={24} color="#6B7280" />
-          <Text style={styles.settingsText}>Settings</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.cardRow}>
-        <View style={styles.card}>
-          <View style={styles.cardIcons}>
-            <Feather name="dollar-sign" size={24} color="#6B7280"></Feather>
-            <View style={styles.cashFlowTrendContainer}>
-              <MaterialCommunityIcons
-                name="arrow-top-right"
-                size={16}
-                color="#059669"
+    <View>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.headerRow}>
+          <Text style={styles.header}>Financial Dashboard</Text>
+          <TouchableOpacity
+            style={styles.settingsContainer}
+            onPress={() => router.navigate("/settings")}
+          >
+            <Ionicons name="settings-outline" size={24} color="#6B7280" />
+            <Text style={styles.settingsText}>Settings</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.cardRow}>
+          <View style={styles.card}>
+            <View style={styles.cardIcons}>
+              <Feather name="dollar-sign" size={24} color="#6B7280"></Feather>
+              <View style={styles.cashFlowTrendContainer}>
+                <MaterialCommunityIcons
+                  name="arrow-top-right"
+                  size={16}
+                  color="#059669"
+                />
+                <Text style={styles.cashFlowTrendText}>
+                  {Math.abs(cashFlowTrend).toFixed(0)}%
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.cardValue}>${netCashFlow.toFixed(2)}</Text>
+            <Text style={styles.cardLabel}>Net Cash Flow</Text>
+          </View>
+          <View style={styles.card}>
+            <View style={styles.cardIcons}>
+              <Ionicons name="trending-down" size={24} color="#6B7280" />
+              <View style={styles.expensesTrendContainer}>
+                <MaterialCommunityIcons
+                  name="arrow-bottom-right"
+                  size={16}
+                  color="#DC2626"
+                />
+                <Text style={styles.expensesTrendText}>
+                  {Math.abs(expenseTrend).toFixed(0)}%
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.cardValue}>
+              ${currentMonthExpense.toFixed(2)}
+            </Text>
+            <Text style={styles.cardLabel}>This Month Expenses</Text>
+          </View>
+        </View>
+
+        <View style={styles.chartContainer}>
+          <Text style={styles.sectionTitle}>Monthly Cash Flow</Text>
+          <CartesianChart
+            data={filteredChartData}
+            xKey="month"
+            yKeys={["income", "expense"]}
+            domain={{
+              y: [yMin, yMax],
+            }}
+            domainPadding={{ left: 40, right: 40 }}
+            axisOptions={{
+              font,
+              formatXLabel: (value) => {
+                // Find the data point for this month
+                const monthData = chartData.find((d) => d.month === value);
+
+                // Only return the label if there is non-zero data
+                const hasData =
+                  monthData && (monthData.income > 0 || monthData.expense > 0);
+
+                return hasData ? value : "";
+              },
+              // Set tickCount to the length of your data to ensure
+              // the chart evaluates every single month point
+              tickCount: chartData.length,
+              lineColor: {
+                grid: { x: "rgba(0,0,0,0)", y: "#e5e7eb" },
+                frame: "rgba(0,0,0,0.05)",
+              },
+            }}
+          >
+            {({ points, chartBounds }) => (
+              <BarGroup
+                chartBounds={chartBounds}
+                betweenGroupPadding={0.3}
+                roundedCorners={{ topLeft: 4, topRight: 4 }}
+                barWidth={16}
+              >
+                <BarGroup.Bar points={points.income} color="#16a34a" />
+                <BarGroup.Bar points={points.expense} color="#dc2626" />
+              </BarGroup>
+            )}
+          </CartesianChart>
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendColor, { backgroundColor: "#16a34a" }]}
               />
-              <Text style={styles.cashFlowTrendText}>
-                {Math.abs(cashFlowTrend).toFixed(0)}%
-              </Text>
+              <Text style={styles.legendLabel}>Income</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View
+                style={[styles.legendColor, { backgroundColor: "#dc2626" }]}
+              />
+              <Text style={styles.legendLabel}>Expense</Text>
             </View>
           </View>
-          <Text style={styles.cardValue}>${netCashFlow.toFixed(2)}</Text>
-          <Text style={styles.cardLabel}>Net Cash Flow</Text>
         </View>
+
         <View style={styles.card}>
-          <View style={styles.cardIcons}>
-            <Ionicons name="trending-down" size={24} color="#6B7280" />
-            <View style={styles.expensesTrendContainer}>
-              <MaterialCommunityIcons
-                name="arrow-bottom-right"
-                size={16}
-                color="#DC2626"
-              />
-              <Text style={styles.expensesTrendText}>
-                {Math.abs(expenseTrend).toFixed(0)}%
-              </Text>
-            </View>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Transactions</Text>
+            <TouchableOpacity onPress={() => router.push("/transactions")}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.cardValue}>
-            ${currentMonthExpense.toFixed(2)}
-          </Text>
-          <Text style={styles.cardLabel}>This Month Expenses</Text>
-        </View>
-      </View>
 
-      <View style={styles.chartContainer}>
-        <Text style={styles.sectionTitle}>Monthly Cash Flow</Text>
-        <CartesianChart
-          data={filteredChartData}
-          xKey="month"
-          yKeys={["income", "expense"]}
-          domain={{
-            y: [yMin, yMax],
-          }}
-          domainPadding={{ left: 40, right: 40 }}
-          axisOptions={{
-            font,
-            formatXLabel: (value) => {
-              // Find the data point for this month
-              const monthData = chartData.find((d) => d.month === value);
+          {recentTransactions.length > 0 ? (
+            recentTransactions.map((item) => (
+              <TouchableOpacity
+                key={item.emailId}
+                style={styles.transactionItem}
+                onPress={() => handleEditTransaction(item)}
+              >
+                {/* Left: Category Indicator & Info */}
+                <View style={styles.transactionLeft}>
+                  <View
+                    style={[
+                      styles.categoryDot,
+                      { backgroundColor: colorMap[item.category] || "#6B7280" },
+                    ]}
+                  />
+                  <View>
+                    <Text style={styles.merchantName} numberOfLines={1}>
+                      {item.merchant || "Unknown Merchant"}
+                    </Text>
+                    <Text style={styles.transactionDate}>
+                      {new Date(item.date).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                </View>
 
-              // Only return the label if there is non-zero data
-              const hasData =
-                monthData && (monthData.income > 0 || monthData.expense > 0);
-
-              return hasData ? value : "";
-            },
-            // Set tickCount to the length of your data to ensure
-            // the chart evaluates every single month point
-            tickCount: chartData.length,
-            lineColor: {
-              grid: { x: "rgba(0,0,0,0)", y: "#e5e7eb" },
-              frame: "rgba(0,0,0,0.05)",
-            },
-          }}
-        >
-          {({ points, chartBounds }) => (
-            <BarGroup
-              chartBounds={chartBounds}
-              betweenGroupPadding={0.3}
-              roundedCorners={{ topLeft: 4, topRight: 4 }}
-              barWidth={16}
-            >
-              <BarGroup.Bar points={points.income} color="#16a34a" />
-              <BarGroup.Bar points={points.expense} color="#dc2626" />
-            </BarGroup>
+                {/* Right: Amount & Currency */}
+                <View style={styles.transactionRight}>
+                  <Text
+                    style={[styles.transactionAmount, { color: "#111827" }]}
+                  >
+                    {item.type === "income" ? "+" : "-"}{" "}
+                    {item.amount.toFixed(2)}
+                  </Text>
+                  <Text style={styles.transactionCurrency}>
+                    {item.currency}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No transactions recorded yet.</Text>
           )}
-        </CartesianChart>
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendColor, { backgroundColor: "#16a34a" }]}
-            />
-            <Text style={styles.legendLabel}>Income</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View
-              style={[styles.legendColor, { backgroundColor: "#dc2626" }]}
-            />
-            <Text style={styles.legendLabel}>Expense</Text>
-          </View>
         </View>
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Spending by Category</Text>
-        {categorySpending.map((cat) => (
-          <View key={cat.name} style={styles.categoryRow}>
-            <View
-              style={[styles.categoryColor, { backgroundColor: cat.color }]}
-            />
-            <Text style={styles.categoryName}>{cat.name}</Text>
-            <Text style={styles.categoryAmount}>${cat.amount.toFixed(2)}</Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Recent Insights</Text>
-        {dynamicInsights.length > 0 ? (
-          dynamicInsights.map((item, index) => (
-            <View key={index} style={styles.insightRow}>
-              {item.icon}
-              <Text style={styles.insightText}>{item.text}</Text>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Spending by Category</Text>
+          {categorySpending.map((cat) => (
+            <View key={cat.name} style={styles.categoryRow}>
+              <View
+                style={[styles.categoryColor, { backgroundColor: cat.color }]}
+              />
+              <Text style={styles.categoryName}>{cat.name}</Text>
+              <Text style={styles.categoryAmount}>
+                ${cat.amount.toFixed(2)}
+              </Text>
             </View>
-          ))
-        ) : (
-          <Text style={styles.insightText}>
-            Sync more data to see insights.
-          </Text>
-        )}
-      </View>
-    </ScrollView>
+          ))}
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Recent Insights</Text>
+          {dynamicInsights.length > 0 ? (
+            dynamicInsights.map((item, index) => (
+              <View key={index} style={styles.insightRow}>
+                {item.icon}
+                <Text style={styles.insightText}>{item.text}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.insightText}>
+              Sync more data to see insights.
+            </Text>
+          )}
+        </View>
+        {/* Transaction Dialog */}
+        <TransactionDialog
+          visible={transactionDialogVisible}
+          onClose={() => setTransactionDialogVisible(false)}
+          transactionToEdit={editingTransaction}
+        />
+      </ScrollView>
+      <TouchableOpacity style={styles.fab} onPress={handleAddTransaction}>
+        <Ionicons name="add" size={30} color="white" />
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -431,6 +515,66 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#333",
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  viewAllText: {
+    color: "#2563EB",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  transactionItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  transactionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    maxWidth: "75%",
+    flex: 1,
+    gap: 12,
+  },
+  transactionRight: {
+    flexDirection: "column",
+    alignItems: "flex-end",
+  },
+  categoryDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  merchantName: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#111827",
+    maxWidth: "100%",
+  },
+  transactionDate: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  transactionCurrency: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#9CA3AF",
+    marginVertical: 20,
+  },
   categoryRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -460,5 +604,74 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 15,
     color: "#333",
+  },
+  fab: {
+    position: "absolute",
+    bottom: 30,
+    right: 30,
+    backgroundColor: "#2563EB",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  typeToggle: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 15,
+  },
+  typeBtn: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+  },
+  activeIncome: { backgroundColor: "#dcfce7", borderColor: "#16a34a" },
+  activeExpense: { backgroundColor: "#FEE2E2", borderColor: "#dc2626" },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 10,
+  },
+  cancelBtn: { padding: 12 },
+  saveBtn: {
+    backgroundColor: "#4F46E5",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
 });

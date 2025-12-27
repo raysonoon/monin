@@ -68,7 +68,7 @@ export default function RootLayout() {
       <AuthProvider>
         <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
           <Stack screenOptions={{ headerShown: false }} />
-          <StatusBar style="auto" />
+          <StatusBar style="dark" />
         </SafeAreaView>
       </AuthProvider>
     </SQLiteProvider>

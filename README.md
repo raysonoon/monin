@@ -166,12 +166,15 @@ OR
 - [x] *Store transaction data
 - [x] *Display transaction data in UI (graphs, list, etc)
 - [x] Sort transaction data by date
-- [ ] *Manually open transaction dialog from button in home screen
-  - [ ] Add income/expense
-- [ ] *Display recent transactions
-- [ ] *Transaction dialog to edit transactions
+- [x] *Manually open transaction dialog from button in home screen
+  - [x] x Add income/expense
+- [x] *Display recent transactions
+- [x] *Transaction screen to edit transactions
+- [x] *Transaction dialog to add/edit transactions
+- [x] *Make recent transaction editable
 - [ ] Trigger transaction dialog via push notification
 - [ ] Push notification for daily reminders
+- [ ] *Move LoginScreen and unfinished settings into another branch
 - [ ] *Google verification center stuff
 - [ ] Try, catch for async fetch calls
 - [ ] Email parsing error handling

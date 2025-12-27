@@ -15,6 +15,13 @@
       "when": 1766811122883,
       "tag": "0001_closed_sister_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1766847320340,
+      "tag": "0002_amusing_roulette",
+      "breakpoints": true
     }
   ]
 }

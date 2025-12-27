@@ -65,6 +65,7 @@ export const transactions = sqliteTable("transactions", {
   source: text("source").notNull(),
 
   type: text("type").$type<TransactionType>().notNull(),
+  notes: text("notes"),
 
   // Metadata
   createdAt: integer("created_at", { mode: "timestamp" }).default(

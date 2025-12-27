@@ -42,17 +42,8 @@ export const getMonthlyCashFlow = (transactions: Transaction[]) => {
 
 export const getCategorySpending = (
   transactions: Transaction[],
-  categories: Category[]
+  colorMap: Record<string, string>
 ) => {
-  // 1. Create the color lookup map
-  const colorMap = categories.reduce(
-    (acc, cat) => {
-      acc[cat.name] = cat.color;
-      return acc;
-    },
-    {} as Record<string, string>
-  );
-
   const totals: Record<string, number> = {};
 
   transactions
@@ -61,10 +52,21 @@ export const getCategorySpending = (
       totals[t.category] = (totals[t.category] || 0) + t.amount;
     });
 
-  // 2. Map totals to objects including the dynamic color
   return Object.entries(totals).map(([name, amount]) => ({
     name,
     amount,
-    color: colorMap[name] || "#6B7280", // Fallback to grey if category missing
+    color: colorMap[name] || "#6B7280",
   }));
+};
+
+export const getCategoryColorMap = (
+  categories: Category[]
+): Record<string, string> => {
+  return categories.reduce(
+    (acc, cat) => {
+      acc[cat.name] = cat.color;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
 };

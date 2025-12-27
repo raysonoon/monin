@@ -13,6 +13,7 @@ export interface Transaction {
   category: Category;
   source: string;
   type: TransactionType;
+  notes?: string;
 }
 
 export interface TransactionProvider {

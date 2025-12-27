@@ -297,7 +297,7 @@ export default function ProviderDialog({
                   <Text style={styles.label}>Provider description</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="e.g. Multi-currency wallet, Credit card, Savings account"
+                    placeholder="e.g. Savings account, Credit card"
                     placeholderTextColor="#9ca3af"
                     value={description ?? ""}
                     onChangeText={setDescription}
@@ -370,7 +370,7 @@ export default function ProviderDialog({
                   </View>
 
                   {/* --- TYPE DROPDOWN --- */}
-                  <Text style={styles.label}>Type</Text>
+                  <Text style={styles.label}>Type (TBC)</Text>
 
                   {/* 1. The Trigger Button (Shows selection or placeholder) */}
                   <TouchableOpacity
