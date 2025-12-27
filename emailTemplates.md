@@ -1,7 +1,7 @@
 # Email templates
 Various emails templates to normalise and parse transaction data from payment providers
 
-## System templates
+## System templates (`templates.ts`)
 - DBS PayLah
 - YouTrip
   
@@ -81,6 +81,13 @@ const headers = paylahEmail.payload.headers;
 ```
 
 ### Body
+- Some email body is nested several layers deep e.g. Revolut
+  - Payload
+    - Part 0: multipart/alternative
+      - Part 0.0: text/plain
+      - Part 0.1: text/html
+    - Part 1: image/png
+- Recursive function to check several layers
 Raw email body (Base64URL) --> Decode email w/ atob --> Normalize email --> Extract vendor-specific info
 
 #### Amount

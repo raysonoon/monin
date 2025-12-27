@@ -3,7 +3,7 @@ interface GmailBody {
   data?: string;
 }
 
-interface GmailPart {
+export interface GmailPart {
   mimeType: string;
   body: GmailBody;
   parts?: GmailPart[];

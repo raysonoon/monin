@@ -92,8 +92,9 @@ OR
 5. Import old transaction email data, csv, excel
 6. Support Outlook emails
 7. OCR
-8. Cash and cashless payment integration
-9. Gemini LLM integration to generate regex patterns from different email templates
+8. Automatically classify income/expense
+9. Cash and cashless payment integration
+10. Gemini LLM integration to generate regex patterns from different email templates
 
 ## TODOs
 
@@ -153,11 +154,12 @@ OR
 - [x] *Separate providers logic from merchant logic
   - [x] GmailParser utils
   - [x] Fetch providers from DB
-- [ ] *UI to add custom provider
+- [x] *UI to add custom provider
 - [ ] *Custom provider regex logic (paste emailBlock and txnBlock)
+  - [ ] Fix Revolut email parsing
 - [ ] Gmail watch mode
   - [ ] Run email parsing on receiving new email
-- [ ] *Add section for transactions with undefined categories for manual review
+- [ ] Add section for transactions with undefined categories for manual review
 - [ ] Add manual review for transactions with auto-approve disabled
   - [ ] Prompt user via push notification
 - [ ] *Store and cache transaction data
@@ -165,10 +167,11 @@ OR
   - [ ] PayLah
   - [ ] YouTrip
   - [ ] Custom
-- [ ] *Sort transaction data by date
+- [ ] Sort transaction data by date
 - [ ] *Manually open transaction dialog from button in home screen
+  - [ ] Add income/expense
 - [ ] Trigger transaction dialog via push notification
-- [ ] *Push notification for daily reminders
+- [ ] Push notification for daily reminders
 - [ ] *Google verification center stuff
 - [ ] Try, catch for async fetch calls
 - [ ] Email parsing error handling
@@ -180,6 +183,9 @@ OR
 - [ ] Placeholder text missing in category, merchant dialogs
 - [ ] Placeholder image for custom providers
 - [ ] UI action button spacing for MerchantDialog
+- [ ] Scrollview not smooth for ProviderDialog
+- [x] parseEmailWithProvider in `gmailParser.ts` does not properly slice Revolut emails
+  - [x] Debug why start and end is -1
 
 ### FEATURE TODO
 

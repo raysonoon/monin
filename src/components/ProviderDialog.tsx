@@ -13,11 +13,10 @@ import {
 } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { categorizationService } from "../services/categorizationService";
 import { db } from "../../db/client";
 import { providers, Provider } from "../../db/schema";
 import { eq } from "drizzle-orm";
-import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import { generateGmailQuery } from "../../utils/gmailQueryGenerator";
 import {
   generateAutoConfigs,
   ExtractionState,
@@ -43,6 +42,8 @@ export default function ProviderDialog({
   // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState<string | null>("");
+  const [subject, setSubject] = useState("");
+  const [address, setAddress] = useState("");
   const [selectedType, setSelectedType] = useState("");
 
   // Validation & extraction state
@@ -56,41 +57,63 @@ export default function ProviderDialog({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controls visibility of the list
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // const { data: categoryList } = useLiveQuery(
-  //   db.select().from(categoriesSchema)
-  // );
-
   // Reset or Populate form when dialog opens
   useEffect(() => {
     if (visible) {
       setIsDropdownOpen(false);
       if (providerToEdit) {
+        const config = JSON.parse(providerToEdit.config || "{}");
+
         // EDIT MODE
         setName(providerToEdit.name);
         setDescription(providerToEdit.description);
-        setSelectedType("expense"); // Hard-coded and not dynamic yet
+        setSubject(config.subject);
+        setAddress(config.address);
+        setEmailBody(config.sampleEmail);
+        setTransactionBlock(config.sampleTransaction);
+        setSelectedType(""); // Not dynamic yet
+
+        // Populate readonly fields
+        setExtractedData({
+          merchant: config.sampleMerchant,
+          amount: config.sampleAmount,
+          currency: config.sampleCurrency,
+          merchantRegex: config.merchantRegex,
+          amountRegex: config.amountRegex,
+          hints: {},
+        });
       } else {
         // ADD MODE (Reset)
         setName("");
         setDescription("");
+        setSubject("");
+        setAddress("");
         setEmailBody("");
         setTransactionBlock("");
         setSelectedType("");
+        setExtractedData(null);
       }
     }
   }, [visible, providerToEdit]);
 
-  // Generate parsed data from transaction block
+  // Auto parse data if user changes transactionBlock
   useEffect(() => {
-    if (transactionBlock.trim().length > 0) {
-      setIsDirty(true);
-      const config = generateAutoConfigs(transactionBlock);
-      setExtractedData(config);
+    if (!transactionBlock) return;
+
+    // Check if current text is different from what is in the DB
+    const savedConfig = providerToEdit
+      ? JSON.parse(providerToEdit.config || "{}")
+      : null;
+    const isNewText = transactionBlock !== savedConfig?.sampleBlock;
+
+    if (isNewText) {
+      console.log("User changed transaction data, re-generating...");
+      const newData = generateAutoConfigs(transactionBlock);
+      if (newData) setExtractedData(newData);
     } else {
-      setIsDirty(false);
-      setExtractedData(null);
+      console.log("Text matches DB, skipping re-generation.");
     }
-  }, [transactionBlock]);
+  }, [transactionBlock, providerToEdit]);
 
   // Helper to render read-only fields with status icons
   const ReadOnlyField = ({
@@ -123,77 +146,120 @@ export default function ProviderDialog({
     </View>
   );
 
-  // const handleSave = async () => {
-  //   if (!name.trim()) {
-  //     Alert.alert("Missing Merchant", "Please enter a merchant name.");
-  //     return;
-  //   }
+  const handleSaveProvider = async () => {
+    if (!name.trim() || !subject.trim() || !address.trim()) {
+      Alert.alert(
+        "Missing Fields",
+        "Please fill in the name, subject, and email address."
+      );
+      return;
+    }
 
-  //   if (!selectedCategoryId) {
-  //     Alert.alert("Missing Category", "Please select a category.");
-  //     return;
-  //   }
+    if (
+      !extractedData ||
+      !extractedData.amountRegex ||
+      !extractedData.merchantRegex
+    ) {
+      Alert.alert(
+        "Invalid Extraction",
+        "We couldn't generate a valid regex from your transaction block."
+      );
+      return;
+    }
 
-  //   setIsSubmitting(true);
+    setIsSubmitting(true);
 
-  //   try {
-  //     const categoryName =
-  //       categoryList.find((cat) => cat.id === selectedCategoryId)?.name ?? "";
+    try {
+      // Generate gmail query
+      const gmailQuery = generateGmailQuery(subject, address);
+      // Generate location logic
+      const { bodyStartMarker, bodyEndMarker } = generateSlicingMarkers(
+        emailBody,
+        transactionBlock
+      );
+      // Generate config object (to string into JSON)
+      const providerConfig = {
+        subject,
+        address,
+        gmailQuery,
+        sampleEmail: emailBody,
+        sampleTransaction: transactionBlock,
+        sampleMerchant: extractedData.merchant,
+        sampleAmount: extractedData.amount,
+        sampleCurrency: extractedData.currency,
+        bodyStartMarker,
+        bodyEndMarker,
+        merchantRegex: extractedData.merchantRegex,
+        amountRegex: extractedData.amountRegex,
+        merchantGroupIndex: 1,
+        currencyGroupIndex: 1, // Group 1 in amountRegex captures currency
+        amountGroupIndex: 2,
+      };
 
-  //     if (merchantToEdit) {
-  //       // --- UPDATE EXISTING ---
-  //       await categorizationService.editUserRule(
-  //         merchantToEdit.id,
-  //         name.trim(),
-  //         selectedCategoryId,
-  //         categoryName
-  //       );
-  //     } else {
-  //       // --- CREATE NEW ---
-  //       await categorizationService.addUserRule(
-  //         name.trim(),
-  //         selectedCategoryId,
-  //         categoryName
-  //       );
-  //     }
-  //     onClose();
-  //   } catch (error) {
-  //     console.error(error);
-  //     Alert.alert(
-  //       "Error",
-  //       "Failed to save categorization rule. Name might be a duplicate."
-  //     );
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
+      if (providerToEdit) {
+        // --- UPDATE EXISTING ---
+        await db
+          .update(providers)
+          .set({
+            name: name.trim(),
+            description: description?.trim(),
+            config: JSON.stringify(providerConfig),
+            // update icon or type if necessary
+          })
+          .where(eq(providers.id, providerToEdit.id));
 
-  // const handleDelete = async () => {
-  //   if (!merchantToEdit) return;
-  //   Alert.alert(
-  //     "Delete Categorization Rule",
-  //     "Are you sure you want to delete this rule?",
-  //     [
-  //       { text: "Cancel", style: "cancel" },
-  //       {
-  //         text: "Delete",
-  //         style: "destructive",
-  //         onPress: async () => {
-  //           setIsSubmitting(true);
-  //           try {
-  //             await categorizationService.deleteUserRule(merchantToEdit.id);
-  //             onClose();
-  //           } catch (error) {
-  //             console.error(error);
-  //             Alert.alert("Error", "Failed to delete category.");
-  //           } finally {
-  //             setIsSubmitting(false);
-  //           }
-  //         },
-  //       },
-  //     ]
-  //   );
-  // };
+        console.log("Provider updated successfully");
+      } else {
+        // --- CREATE NEW ---
+        await db.insert(providers).values({
+          name: name.trim(),
+          description: description?.trim(),
+          icon: selectedType === "expense" ? "💸" : "💰",
+          config: JSON.stringify(providerConfig),
+        });
+
+        console.log("New provider created");
+      }
+      onClose();
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        "Error",
+        "Failed to save payment provider. Name might be a duplicate."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!providerToEdit) return;
+    Alert.alert(
+      "Delete Payment Provider",
+      "Are you sure you want to delete this payment provider?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsSubmitting(true);
+            try {
+              await db
+                .delete(providers)
+                .where(eq(providers.id, providerToEdit.id));
+              onClose();
+            } catch (error) {
+              console.error(error);
+              Alert.alert("Error", "Failed to delete payment provider.");
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <Modal visible={visible} transparent>
@@ -222,6 +288,7 @@ export default function ProviderDialog({
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. Revolut, MariBank, GrabPay"
+                    placeholderTextColor="#9ca3af"
                     value={name}
                     onChangeText={setName}
                   />
@@ -231,8 +298,29 @@ export default function ProviderDialog({
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. Multi-currency wallet, Credit card, Savings account"
-                    value={name}
+                    placeholderTextColor="#9ca3af"
+                    value={description ?? ""}
                     onChangeText={setDescription}
+                  />
+
+                  {/* Email Subject */}
+                  <Text style={styles.label}>Email subject</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. Card Transaction Alert"
+                    placeholderTextColor="#9ca3af"
+                    value={subject}
+                    onChangeText={setSubject}
+                  />
+
+                  {/* Sender Email Address */}
+                  <Text style={styles.label}>Email address</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. ibanking.alert@dbs.com"
+                    placeholderTextColor="#9ca3af"
+                    value={address}
+                    onChangeText={setAddress}
                   />
 
                   {/* Email Body */}
@@ -241,6 +329,7 @@ export default function ProviderDialog({
                     style={[styles.input, styles.textArea]}
                     multiline
                     placeholder="Paste the full email body here..."
+                    placeholderTextColor="#9ca3af"
                     value={emailBody}
                     onChangeText={(text) => {
                       setEmailBody(text);
@@ -253,6 +342,7 @@ export default function ProviderDialog({
                     style={[styles.input, styles.textArea]}
                     multiline
                     placeholder="Paste transaction details here..."
+                    placeholderTextColor="#9ca3af"
                     value={transactionBlock}
                     onChangeText={(text) => {
                       setTransactionBlock(text);
@@ -364,6 +454,7 @@ export default function ProviderDialog({
                         <TouchableOpacity
                           style={styles.deleteButton}
                           disabled={isSubmitting}
+                          onPress={handleDelete}
                         >
                           <Text style={styles.deleteButtonText}>Delete</Text>
                         </TouchableOpacity>
@@ -385,6 +476,7 @@ export default function ProviderDialog({
                       <TouchableOpacity
                         style={styles.createButton}
                         disabled={isSubmitting}
+                        onPress={handleSaveProvider}
                       >
                         <Text style={styles.createButtonText}>
                           {isSubmitting

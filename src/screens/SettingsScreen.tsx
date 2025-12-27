@@ -93,7 +93,7 @@ export const SettingsScreen = () => {
   };
 
   const { data: providers } = useLiveQuery(
-    db.select().from(providersSchema), // categoriesSchema refers to table definition, while categories is actual data from DB
+    db.select().from(providersSchema), // providersSchema refers to table definition, while categories is actual data from DB
     []
   );
 

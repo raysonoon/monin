@@ -10,6 +10,7 @@ const extract = (
   try {
     // We add 'i' flag for case-insensitive and 'm' for multiline matching
     const regex = new RegExp(pattern, "im");
+    console.log("Regex", regex);
     const match = text.match(regex);
     return match && match[groupIndex] ? match[groupIndex].trim() : null;
   } catch (e) {
@@ -35,6 +36,11 @@ export const parseEmailWithProvider = (
   if (start !== -1 && end !== -1 && end > start) {
     textToScan = emailBody.slice(start, end);
   }
+
+  if (provider.name === "Revolut" || provider.name === "YouTrip")
+    console.log(
+      `${config.bodyStartMarker}, ${config.bodyEndMarker}, start ${start}, end ${end}, scanning text ${textToScan}`
+    );
 
   // Extract data using stored Regex
   const rawMerchant = extract(

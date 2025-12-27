@@ -4,6 +4,7 @@ import { categorizationService } from "../categorizationService";
 import type {
   GmailHeader,
   GmailPayload,
+  GmailPart,
   GmailMessagesList,
   GmailMessage,
 } from "../../types/gmail";
@@ -141,17 +142,30 @@ export const syncAllTransactions = async (
 const getHeader = (headers: GmailHeader[], name: string) =>
   headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value;
 
-// Get body from email payload
-const getBody = (payload: GmailPayload): string | undefined => {
+// Get body from email payload recursively
+const getBody = (payload: GmailPayload | GmailPart): string | undefined => {
+  // Base case: if data exists at top level, return
   if (payload.body && payload.body.data) return payload.body.data;
+
+  // If there are parts, search through them
   if (payload.parts && Array.isArray(payload.parts)) {
+    // First, look for text/plain in current parts
+    const plainTextPart = payload.parts.find(
+      (p) => p.mimeType === "text/plain" && p.body.data
+    );
+    if (plainTextPart) return plainTextPart.body.data;
+
+    // Second, look for text/html in current parts
+    const htmlPart = payload.parts.find(
+      (p) => p.mimeType === "text/html" && p.body.data
+    );
+    if (htmlPart) return htmlPart.body.data;
+
+    // Third, if neither found, RECURSE into sub-parts
     for (const part of payload.parts) {
-      if (
-        (part.mimeType === "text/html" || part.mimeType === "text/plain") &&
-        part.body &&
-        part.body.data
-      ) {
-        return part.body.data;
+      if (part.parts) {
+        const nestedData = getBody(part); // Recursive call
+        if (nestedData) return nestedData;
       }
     }
   }
