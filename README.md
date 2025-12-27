@@ -163,14 +163,13 @@ OR
 - [ ] Add section for transactions with undefined categories for manual review
 - [ ] Add manual review for transactions with auto-approve disabled
   - [ ] Prompt user via push notification
-- [ ] *Store and cache transaction data
-- [ ] *Display transaction data in UI (graphs, list, etc)
-  - [ ] PayLah
-  - [ ] YouTrip
-  - [ ] Custom
-- [ ] Sort transaction data by date
+- [x] *Store transaction data
+- [x] *Display transaction data in UI (graphs, list, etc)
+- [x] Sort transaction data by date
 - [ ] *Manually open transaction dialog from button in home screen
   - [ ] Add income/expense
+- [ ] *Display recent transactions
+- [ ] *Transaction dialog to edit transactions
 - [ ] Trigger transaction dialog via push notification
 - [ ] Push notification for daily reminders
 - [ ] *Google verification center stuff
@@ -185,6 +184,7 @@ OR
 - [ ] Placeholder image for custom providers
 - [ ] UI action button spacing for MerchantDialog
 - [ ] Scrollview not smooth for ProviderDialog
+- [ ] x-axis label formatting for monthly cash flow
 - [x] parseEmailWithProvider in `gmailParser.ts` does not properly slice Revolut emails
   - [x] Debug why start and end is -1
 
