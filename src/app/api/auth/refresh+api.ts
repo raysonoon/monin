@@ -77,7 +77,7 @@ export async function POST(request: Request) {
             acc[key.trim()] = value;
             return acc;
           },
-          {} as Record<string, string>,
+          {} as Record<string, string>
         );
 
         // Get refresh token from cookie
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
           // Verify the access token
           const decoded = await jose.jwtVerify(
             accessToken,
-            new TextEncoder().encode(JWT_SECRET),
+            new TextEncoder().encode(JWT_SECRET)
           );
 
           // If token is still valid, use it to create a new token
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
                 COOKIE_OPTIONS.httpOnly ? "HttpOnly;" : ""
               } ${COOKIE_OPTIONS.secure ? "Secure;" : ""} SameSite=${
                 COOKIE_OPTIONS.sameSite
-              }`,
+              }`
             );
 
             return response;
@@ -149,14 +149,14 @@ export async function POST(request: Request) {
           // Access token is invalid or expired
           return Response.json(
             { error: "Authentication required - no valid refresh token" },
-            { status: 401 },
+            { status: 401 }
           );
         }
       }
 
       return Response.json(
         { error: "Authentication required - no refresh token" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -165,18 +165,18 @@ export async function POST(request: Request) {
     try {
       decoded = await jose.jwtVerify(
         refreshToken,
-        new TextEncoder().encode(JWT_SECRET),
+        new TextEncoder().encode(JWT_SECRET)
       );
     } catch (error) {
       if (error instanceof jose.errors.JWTExpired) {
         return Response.json(
           { error: "Refresh token expired, please sign in again" },
-          { status: 401 },
+          { status: 401 }
         );
       } else {
         return Response.json(
           { error: "Invalid refresh token, please sign in again" },
-          { status: 401 },
+          { status: 401 }
         );
       }
     }
@@ -186,7 +186,7 @@ export async function POST(request: Request) {
     if (payload.type !== "refresh") {
       return Response.json(
         { error: "Invalid token type, please sign in again" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -195,7 +195,7 @@ export async function POST(request: Request) {
     if (!sub) {
       return Response.json(
         { error: "Invalid token, missing subject" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -277,7 +277,7 @@ export async function POST(request: Request) {
           COOKIE_OPTIONS.httpOnly ? "HttpOnly;" : ""
         } ${COOKIE_OPTIONS.secure ? "Secure;" : ""} SameSite=${
           COOKIE_OPTIONS.sameSite
-        }`,
+        }`
       );
 
       // Set the new refresh token in a separate HTTP-only cookie
@@ -289,7 +289,7 @@ export async function POST(request: Request) {
           REFRESH_COOKIE_OPTIONS.httpOnly ? "HttpOnly;" : ""
         } ${REFRESH_COOKIE_OPTIONS.secure ? "Secure;" : ""} SameSite=${
           REFRESH_COOKIE_OPTIONS.sameSite
-        }`,
+        }`
       );
 
       return response;

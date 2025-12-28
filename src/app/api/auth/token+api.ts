@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   if (!code) {
     return Response.json(
       { error: "Missing authorization code" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       },
       {
         status: 400,
-      },
+      }
     );
   }
 
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
         COOKIE_OPTIONS.path
       }; ${COOKIE_OPTIONS.httpOnly ? "HttpOnly;" : ""} ${
         COOKIE_OPTIONS.secure ? "Secure;" : ""
-      } SameSite=${COOKIE_OPTIONS.sameSite}`,
+      } SameSite=${COOKIE_OPTIONS.sameSite}`
     );
 
     // Set the refresh token in a separate HTTP-only cookie
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
         REFRESH_COOKIE_OPTIONS.httpOnly ? "HttpOnly;" : ""
       } ${REFRESH_COOKIE_OPTIONS.secure ? "Secure;" : ""} SameSite=${
         REFRESH_COOKIE_OPTIONS.sameSite
-      }`,
+      }`
     );
 
     return response;

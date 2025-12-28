@@ -15,7 +15,6 @@ import {
   transactions as transactionsSchema,
   Transaction,
   categories as categoriesSchema,
-  Category,
 } from "../../db/schema";
 import TransactionDialog from "../components/TransactionDialog";
 import {

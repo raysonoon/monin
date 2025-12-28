@@ -18,7 +18,7 @@ export async function POST(request: Request) {
         COOKIE_OPTIONS.httpOnly ? "HttpOnly;" : ""
       } ${COOKIE_OPTIONS.secure ? "Secure;" : ""} SameSite=${
         COOKIE_OPTIONS.sameSite
-      }`,
+      }`
     );
 
     // Clear the refresh token cookie
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
         REFRESH_COOKIE_OPTIONS.path
       }; ${REFRESH_COOKIE_OPTIONS.httpOnly ? "HttpOnly;" : ""} ${
         REFRESH_COOKIE_OPTIONS.secure ? "Secure;" : ""
-      } SameSite=${REFRESH_COOKIE_OPTIONS.sameSite}`,
+      } SameSite=${REFRESH_COOKIE_OPTIONS.sameSite}`
     );
 
     return response;

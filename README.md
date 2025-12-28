@@ -167,7 +167,7 @@ OR
 - [x] *Display transaction data in UI (graphs, list, etc)
 - [x] Sort transaction data by date
 - [x] *Manually open transaction dialog from button in home screen
-  - [x] x Add income/expense
+  - [x] Add income/expense
 - [x] *Display recent transactions
 - [x] *Transaction screen to edit transactions
 - [x] *Transaction dialog to add/edit transactions
@@ -175,11 +175,12 @@ OR
 - [ ] Trigger transaction dialog via push notification
 - [ ] Push notification for daily reminders
 - [ ] *Move LoginScreen and unfinished settings into another branch
+- [ ] Refactor Input fields to use InputField components
 - [ ] *Google verification center stuff
 - [ ] Try, catch for async fetch calls
 - [ ] Email parsing error handling
 - [x] Configure Expo router
-- [ ] *Deploy
+- [ ] *Deploy a local build
 
 ## BUGS
 - [ ] Database timestamp not mapped to local time

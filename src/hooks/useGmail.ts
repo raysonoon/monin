@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "../context/auth";
 import { syncAllTransactions } from "../services/gmail/gmailService";
-import { Transaction } from "../types/transaction";
+import { Transaction } from "../../db/schema";
 
 export const useGmail = () => {
   const { user, isLoading, googleAccessToken, signIn, signOut } = useAuth();
 
   const [paylahEmailData, setPaylahEmailData] = useState<Transaction | null>(
-    null,
+    null
   );
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -31,7 +31,21 @@ export const useGmail = () => {
 
       if (transactions.length > 0) {
         // Display the most recent transaction for the 'Run Test' result
-        setPaylahEmailData(transactions[0]);
+        const tx = transactions[0];
+        setPaylahEmailData({
+          date: tx.date,
+          id: tx.id ?? 0,
+          emailId: tx.emailId,
+          providerId: tx.providerId ?? null,
+          merchant: tx.merchant,
+          amount: tx.amount,
+          currency: tx.currency,
+          category: tx.category,
+          source: tx.source,
+          type: tx.type,
+          notes: tx.notes ?? null,
+          createdAt: tx.createdAt ?? null,
+        });
       } else {
         setPaylahEmailData(null);
       }

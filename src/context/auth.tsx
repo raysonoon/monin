@@ -5,7 +5,6 @@ import {
   AuthError,
   AuthRequestConfig,
   DiscoveryDocument,
-  exchangeCodeAsync,
   makeRedirectUri,
   useAuthRequest,
 } from "expo-auth-session";
@@ -13,7 +12,6 @@ import { tokenCache } from "../../utils/cache";
 import { Platform } from "react-native";
 import { BASE_URL } from "../../utils/constants";
 import * as jose from "jose";
-import { randomUUID } from "expo-crypto";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -61,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(
-    null,
+    null
   );
   const [request, response, promptAsync] = useAuthRequest(config, discovery);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,11 +103,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           console.log(
             "Restoring session - Access token:",
-            storedAccessToken ? "exists" : "missing",
+            storedAccessToken ? "exists" : "missing"
           );
           console.log(
             "Restoring session - Refresh token:",
-            storedRefreshToken ? "exists" : "missing",
+            storedRefreshToken ? "exists" : "missing"
           );
 
           if (storedAccessToken) {
@@ -182,7 +180,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log(
         "Current refresh token:",
-        currentRefreshToken ? "exists" : "missing",
+        currentRefreshToken ? "exists" : "missing"
       );
 
       if (isWeb) {
@@ -258,11 +256,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         console.log(
           "Received new access token:",
-          newAccessToken ? "exists" : "missing",
+          newAccessToken ? "exists" : "missing"
         );
         console.log(
           "Received new refresh token:",
-          newRefreshToken ? "exists" : "missing",
+          newRefreshToken ? "exists" : "missing"
         );
 
         if (newAccessToken) setAccessToken(newAccessToken);
@@ -277,7 +275,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (newGoogleAccessToken)
           await tokenCache?.saveToken(
             "googleAccessToken",
-            newGoogleAccessToken,
+            newGoogleAccessToken
           );
 
         // Update user data from the new access token
@@ -294,7 +292,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (!hasRequiredFields) {
             console.warn(
               "Refreshed token is missing some user fields:",
-              decoded,
+              decoded
             );
           }
 
@@ -405,7 +403,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               {
                 method: "GET",
                 credentials: "include",
-              },
+              }
             );
             if (sessionResponse.ok) {
               const sessionData = await sessionResponse.json();

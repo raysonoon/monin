@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   if (!GOOGLE_CLIENT_ID) {
     return Response.json(
       { error: "Missing GOOGLE_CLIENT_ID environment variable" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 

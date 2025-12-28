@@ -13,7 +13,6 @@ import {
   transactions as transactionsSchema,
   Transaction,
   categories as categoriesSchema,
-  Category,
 } from "../../db/schema";
 import TransactionDialog from "../components/TransactionDialog";
 import { getCategoryColorMap } from "../services/transaction/transactionHelper";
@@ -134,6 +133,7 @@ export const TransactionsScreen = () => {
                 <Text style={styles.merchantText}>{item.merchant}</Text>
                 <Text style={styles.dateText}>
                   {new Date(item.date).toLocaleDateString(undefined, {
+                    year: "2-digit",
                     month: "short",
                     day: "numeric",
                     hour: "2-digit",

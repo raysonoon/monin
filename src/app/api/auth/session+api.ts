@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       // Verify the token
       const verified = await jose.jwtVerify(
         token,
-        new TextEncoder().encode(JWT_SECRET),
+        new TextEncoder().encode(JWT_SECRET)
       );
 
       // Calculate cookie expiration time

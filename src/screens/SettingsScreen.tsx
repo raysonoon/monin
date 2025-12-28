@@ -1,8 +1,6 @@
 import {
   View,
   Text,
-  Switch,
-  TextInput,
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
@@ -10,9 +8,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useState, useEffect } from "react";
-import { useAuth } from "../context/auth";
 import { useGmail } from "../hooks/useGmail";
-import { BASE_URL } from "../../utils/constants";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { db } from "../../db/client";
 import {
@@ -40,10 +36,6 @@ export const SettingsScreen = () => {
     syncError,
   } = useGmail();
 
-  const { fetchWithAuth } = useAuth();
-
-  const [data, setData] = useState();
-
   // Provider dialog state
   const [providerDialogVisible, setProviderDialogVisible] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
@@ -56,10 +48,6 @@ export const SettingsScreen = () => {
   const [merchantDialogVisible, setMerchantDialogVisible] = useState(false);
   const [editingMerchant, setEditingMerchant] =
     useState<CategorizationRule | null>(null);
-
-  const [autoSync, setAutoSync] = useState(true);
-  const [skipDuplicates, setSkipDuplicates] = useState(false);
-  const [manualApproval, setManualApproval] = useState(true);
 
   // Handlers
   const handleAddProvider = () => {
@@ -97,6 +85,51 @@ export const SettingsScreen = () => {
     []
   );
 
+  const renderSyncPreview = () => {
+    if (!paylahEmailData) {
+      return (
+        <View style={styles.emptyPreview}>
+          <Feather name="info" size={16} color="#9ca3af" />
+          <Text style={styles.emptyPreviewText}>
+            No recent sync data found.
+          </Text>
+        </View>
+      );
+    }
+
+    // Assuming paylahEmailData contains: merchant, amount, date, currency
+    return (
+      <View style={styles.syncCard}>
+        <View style={styles.syncCardRow}>
+          <View>
+            <Text style={styles.syncMerchant}>
+              {paylahEmailData.merchant || "Unknown Merchant"}
+            </Text>
+            <Text style={styles.syncDate}>
+              {paylahEmailData.date
+                ? new Date(paylahEmailData.date).toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  })
+                : "No date found"}
+            </Text>
+          </View>
+          <View style={styles.syncAmountContainer}>
+            <Text style={styles.syncAmount}>
+              {paylahEmailData.currency} {paylahEmailData.amount?.toFixed(2)}
+            </Text>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>Success</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   useEffect(() => {
     console.log("Providers updated in UI:", providers?.length);
   }, [providers]);
@@ -129,15 +162,6 @@ export const SettingsScreen = () => {
         <Text>Loading...</Text>
       </View>
     );
-
-  const getProtectedData = async () => {
-    const response = await fetchWithAuth(`${BASE_URL}/api/protected/data`, {
-      method: "GET",
-    });
-
-    const data = await response.json();
-    setData(data);
-  };
 
   return (
     <ScrollView
@@ -182,50 +206,28 @@ export const SettingsScreen = () => {
         )}
       </View>
 
-      {/* Protected Data */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Protected Data</Text>
-        <Text>{JSON.stringify(data)}</Text>
-        <TouchableOpacity style={styles.button} onPress={getProtectedData}>
-          <Text style={styles.buttonText}>Fetch protected data</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Last Synced Transaction */}
       <View style={styles.section}>
         <Text style={styles.title}>Last Synced Transaction</Text>
         {syncError && <Text style={{ color: "red" }}>Error: {syncError}</Text>}
-        <Text>{JSON.stringify(paylahEmailData)}</Text>
-        {/* Run Test */}
-        <TouchableOpacity
-          style={styles.button}
-          onPress={listPaylahEmails}
-          disabled={isSyncing || !user}
-        >
-          {isSyncing ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>
-              {user ? "Run Full Sync Test" : "Connect Gmail to Run Test"}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        <View style={styles.section}>
+          {/* The new friendly UI */}
+          {renderSyncPreview()}
 
-      {/* Sync Settings */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Sync Settings</Text>
-
-        <View style={styles.row}>
-          <Text>Auto-sync new emails</Text>
-          <Switch value={autoSync} onValueChange={setAutoSync} />
+          <TouchableOpacity
+            style={[styles.button, { marginTop: 15 }]}
+            onPress={listPaylahEmails}
+            disabled={isSyncing || !user}
+          >
+            {isSyncing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {user ? "Run Full Sync Test" : "Connect Gmail to Run Test"}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-
-        <Text style={{ marginTop: 10 }}>Sync frequency</Text>
-        <TextInput placeholder="Every 15 minutes" style={styles.input} />
-
-        <Text style={{ marginTop: 10 }}>Look back period</Text>
-        <TextInput placeholder="Last 7 days" style={styles.input} />
       </View>
 
       {/* Payment Providers */}
@@ -351,24 +353,6 @@ export const SettingsScreen = () => {
         onClose={() => setMerchantDialogVisible(false)}
         merchantToEdit={editingMerchant}
       />
-
-      {/* Advanced Settings */}
-      <View style={styles.section}>
-        <Text style={styles.title}>Advanced Settings</Text>
-
-        <Text>Custom email filters</Text>
-        <TextInput placeholder="Enter keywords" style={styles.input} />
-
-        <View style={styles.row}>
-          <Text>Skip duplicate detection</Text>
-          <Switch value={skipDuplicates} onValueChange={setSkipDuplicates} />
-        </View>
-
-        <View style={styles.row}>
-          <Text>Require manual approval</Text>
-          <Switch value={manualApproval} onValueChange={setManualApproval} />
-        </View>
-      </View>
     </ScrollView>
   );
 };
@@ -405,6 +389,70 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1, // Takes up remaining space
     marginRight: 10,
+  },
+  emptyPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#f9fafb",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderStyle: "dashed",
+  },
+  emptyPreviewText: {
+    color: "#6b7280",
+    fontSize: 14,
+  },
+  syncCard: {
+    backgroundColor: "#f8fafc",
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  syncCardRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  syncMerchant: {
+    fontSize: 16,
+    fontWeight: "400",
+    fontStyle: "italic",
+    color: "#1e293b",
+    marginBottom: 4,
+  },
+  syncDate: {
+    fontSize: 12,
+    color: "#64748b",
+  },
+  syncAmountContainer: {
+    alignItems: "flex-end",
+  },
+  syncAmount: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#0f172a",
+  },
+  statusBadge: {
+    backgroundColor: "#dcfce7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 99,
+    marginTop: 4,
+  },
+  statusText: {
+    color: "#166534",
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  errorText: {
+    color: "#dc2626",
+    marginBottom: 10,
+    fontSize: 14,
   },
   providerIcon: {
     width: 30,
@@ -458,6 +506,7 @@ const styles = StyleSheet.create({
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     borderRadius: 8,
   },
