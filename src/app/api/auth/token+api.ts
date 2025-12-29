@@ -1,8 +1,8 @@
 // Token exchange with Google
 import * as jose from "jose";
 import {
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
+  GOOGLE_WEB_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_SECRET,
   GOOGLE_REDIRECT_URI,
   COOKIE_NAME,
   REFRESH_COOKIE_NAME,
@@ -30,8 +30,8 @@ export async function POST(request: Request) {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
+      client_id: GOOGLE_WEB_CLIENT_ID,
+      client_secret: GOOGLE_WEB_CLIENT_SECRET,
       redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: "authorization_code",
       code: code,

@@ -1,6 +1,6 @@
 // Google authorize API routes
 import {
-  GOOGLE_CLIENT_ID,
+  GOOGLE_WEB_CLIENT_ID,
   BASE_URL,
   APP_SCHEME,
   GOOGLE_AUTH_URL,
@@ -9,9 +9,9 @@ import {
 
 // Redirect to Google sign-in
 export async function GET(request: Request) {
-  if (!GOOGLE_CLIENT_ID) {
+  if (!GOOGLE_WEB_CLIENT_ID) {
     return Response.json(
-      { error: "Missing GOOGLE_CLIENT_ID environment variable" },
+      { error: "Missing GOOGLE_WEB_CLIENT_ID environment variable" },
       { status: 500 }
     );
   }
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
   }
 
   if (internalClient === "google") {
-    idpClientId = GOOGLE_CLIENT_ID;
+    idpClientId = GOOGLE_WEB_CLIENT_ID;
   } else {
     return Response.json({ error: "Invalid client" }, { status: 400 });
   }
