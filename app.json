@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.monin"
+      "bundleIdentifier": "com.rayson.monin"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.monin"
+      "package": "com.rayson.monin"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -34,6 +34,12 @@
       "expo-web-browser",
       "expo-secure-store",
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4b90c12f-b9b2-475e-aae8-ba609207114d"
+      }
+    }
   }
 }
