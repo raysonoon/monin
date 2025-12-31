@@ -12,7 +12,7 @@ Current features (v1.0.00) include
 
 ## How to run the app
 - Installation
-  1. Download APK file here on your Android device
+  1. Download APK file [here](https://github.com/raysonoon/monin/releases/tag/latest) on your Android device
   2. Install the APK and app will open
 
 ## Skills & Technologies
