@@ -1,118 +1,68 @@
 # monin
 
-React Native app to track expenses through email notifications
+monin is a React Native (Expo) mobile app designed to help users track their expenses by parsing email notifications. 
+
+## Features
+Current features (v1.0.00) include
+- Auto-categorization
+- Data visualization
+- Financial insights
+
+> monin is still actively in development!
+
+## How to run the app
+- Installation
+  1. Download APK file here on your Android device
+  2. Install the APK and app will open
+
+## Skills & Technologies
+- TypeScript
+- React Native (Expo)
+- Regex (for email parsing)
+- SQLite + Drizzle ORM (for local database)
+- Expo modules (auth, secure store, router, etc.)
+- Data visualization (Victory Native, Skia)
+- ESLint & Prettier
 
 ## Folder structure
-Refer [here](https://javascript.plainenglish.io/react-native-folder-structures-architecture-explained-5177027dc2bb)
-
 ```
-myApp/
-├── App.tsx
-├── assets/
-│   └── images/
-│   └── fonts/
-├── components/
-│   └── Button.tsx
-│   └── Header.tsx
-├── screens/
-│   └── HomeScreen.tsx
-│   └── LoginScreen.tsx
-├── navigation/
-│   └── AppNavigator.tsx
-├── constants/
-│   └── Colors.ts
-│   └── Strings.ts
-├── utils/
-│   └── formatDate.ts
-│   └── validators.ts
-├── services/
-│   └── api.ts
-├── types/
-│   └── index.ts
-└── package.json
-```
-
-OR
-
-```
-├── assets/
-├── scripts/
+monin/
+├── assets/                 # Static content
+├── db/                     # db schema, seed and client
+├── drizzle/                # Drizzle ORM migrations and metadata
 ├── src/
-│   ├── app/
-│   │   ├── api/                    # API routes in a separate folder
-│   │   │   ├── event+api.ts
-│   │   │   └── user+api.ts
-│   │   ├── layout.tsx
-│   │   ├── layout.web.tsx         # separate layout file for web
-│   │   ├── index.tsx
-│   │   ├── events.tsx
-│   │   └── settings.tsx
-│   ├── components/
-│   │   ├── Table/
-│   │   │   ├── Cell.tsx
-│   │   │   └── index.tsx
-│   │   ├── BarChart.tsx
-│   │   ├── BarChart.web.tsx        # separate components for web and native
-│   │   └── Button.tsx
-│   ├── screens/
-│   │   ├── Home/
-│   │   │   ├── Card.tsx            # component only used in the home page
-│   │   │   └── index.tsx           # returned from /src/app/index.tsx
-│   │   ├── Events.tsx              # returned from /src/app/events.tsx
-│   │   └── Settings.tsx            # returned from /src/app/settings.tsx
-│   ├── server/                     # code used in /api
-│   │   ├── auth.ts
-│   │   └── db.ts
-│   ├── utils/                      # reusable utilities
-│   │   ├── formatDate.ts
-│   │   ├── formatDate.test.ts      # unit test next to the file being tested
-│   │   └── pluralize.ts
-│   ├── hooks/
-│   │   ├── useAppState.ts
-│   │   └── useTheme.ts
-├── app.json
-├── eas.json
-└── package.json
+│   ├── app/                # App routes
+│   ├── components/         # Reusable UI components
+│   ├── context/            # React context providers
+│   ├── hooks/              # Custom React hooks
+│   ├── screens/            # App screens (Home, Settings, Transactions)
+│   ├── services/           # Business logic and integrations (categorization, Gmail, transactions)
+│   ├── types/              # TypeScript type definitions
+│   └── utils/              # helper functions
+├── app.json                # Expo app configuration
+├── babel.config.js         # Babel configuration
+├── drizzle.config.ts       # Drizzle ORM config
+├── eas.json                # Expo Application Services config
+├── eslint.config.js        # ESLint configuration
+├── metro.config.js         # Metro bundler config
+├── package.json            # Project dependencies and scripts
+├── tsconfig.json           # TypeScript configuration
+└── README.md               # Project documentation
 ```
-
-## Features (MVP)
-
-1. Email parsing (Gmail)
-2. Push notification reminders (from email parsing/user scheduled)
-3. Smart categorisation rules
-4. Data visualisation (monthly cash flow, spending trends across categories)
-5. Export data to csv, excel
-
-## Future features
-
-1. Custom categories & tags
-2. Search & filter
-3. Recurring transactions
-4. Budget goals
-5. Import old transaction email data, csv, excel (get proper timestamp from forwarded emails)
-6. Support Outlook emails
-7. OCR
-8. Automatically classify income/expense
-9. Cash and cashless payment integration
-10. Bulk insert: uploading 100+ transaction data at one time
-11. Gemini LLM integration to generate regex patterns from different email templates
-
-
-### FEATURE TODO
 
 ## Dependencies
-- Expo SDK v54
-- Babel
-- ESLint
+Key dependencies include:
+- expo
+- react-native
+- drizzle-orm
+- victory-native
+- @expo/vector-icons
+- expo-auth-session
+- expo-secure-store
+- sqlite
+- eslint, prettier, typescript
 
-> Run `npx expo-doctor` to update dependencies if required
+> Refer to the `package.json` file for the full list of dependencies and their versions
 
-## Getting Started
-| Command                         | Description                                                                                                                         |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| `npx expo start`                   | Starts the development server (whether you are using a development build or Expo Go).                                               |
-| `npx expo prebuild`                | Generates native Android and iOS directories using Prebuild.                                                                        |
-| `npx expo run:android`             | Compiles native Android app locally.                                                                                                |
-| `npx expo run:ios`                 | Compiles native iOS app locally.                                                                                                   |
-|` npx expo install package-name`    | Used to install a new library or validate and update specific libraries in your project by adding --fix option to this command.     |
-| `npx expo lint`                    | Setup and configures ESLint. If ESLint is already configured, this command will lint your project files.                            |
+## What the app looks like
+[![Watch the video](https://raw.githubusercontent.com/raysonoon/monin/main/assets/monin-v1.0.00.png)](https://raw.githubusercontent.com/raysonoon/monin/main/assets/monin-v1.0.00-demo.mp4)
