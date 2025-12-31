@@ -65,4 +65,4 @@ Key dependencies include:
 > Refer to the `package.json` file for the full list of dependencies and their versions
 
 ## What the app looks like
-![Watch the video](https://github.com/user-attachments/assets/ef0056da-b114-462b-9223-21b4946daf8c)
+[Watch the video](https://github.com/user-attachments/assets/ef0056da-b114-462b-9223-21b4946daf8c)
