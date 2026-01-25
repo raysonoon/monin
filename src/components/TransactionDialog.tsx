@@ -45,7 +45,19 @@ export default function TransactionDialog({
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("SGD");
   const [type, setType] = useState<"income" | "expense">("expense");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]); // YYYY-MM-DD
+  const [date, setDate] = useState(
+    new Date()
+      .toLocaleTimeString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(",", "")
+  ); // DD/MM/YYYY Time
   const [notes, setNotes] = useState("");
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
@@ -84,7 +96,19 @@ export default function TransactionDialog({
 
         setSelectedCategoryId(matchingCategory ? matchingCategory.id : null);
 
-        setDate(new Date(transactionToEdit.date).toISOString().split("T")[0]);
+        setDate(
+          new Date(transactionToEdit.date)
+            .toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false,
+            })
+            .replace(",", "")
+        );
         setNotes(transactionToEdit.notes || "");
       } else {
         // ADD MODE (Reset)
@@ -93,7 +117,19 @@ export default function TransactionDialog({
         setCurrency("SGD");
         setType("expense");
         setSelectedCategoryId(null);
-        setDate(new Date().toISOString().split("T")[0]);
+        setDate(
+          new Date()
+            .toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false,
+            })
+            .replace(",", "")
+        );
         setNotes("");
       }
     }
@@ -372,7 +408,7 @@ export default function TransactionDialog({
 
                 {/* Date */}
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Date (YYYY-MM-DD)</Text>
+                  <Text style={styles.label}>Date (DD/MM/YYYY) & Time</Text>
                   <TextInput
                     style={styles.input}
                     value={date}
