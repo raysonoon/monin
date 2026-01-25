@@ -33,7 +33,7 @@ const TYPE_OPTIONS = [
   { key: "income", label: "Income", icon: "💰" },
 ];
 
-const CURRENCY_OPTIONS = ["SGD", "USD", "EUR", "GBP", "JPY", "MYR"];
+const CURRENCY_OPTIONS = ["SGD", "CAD", "USD", "EUR", "GBP", "JPY", "MYR"];
 
 export default function TransactionDialog({
   visible,
