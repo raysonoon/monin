@@ -21,8 +21,8 @@ export const PROVIDER_TEMPLATES = [
       gmailQuery: `subject:online purchases "noreply@you.co"`,
       bodyStartMarker: "Time (UTC+8)",
       bodyEndMarker: "full transaction history",
-      merchantRegex: "^(.+)\\s+[A-Z]{3}\\s+[\\d,.]+$",
-      amountRegex: "^.+\\s+([A-Z]{3})\\s+([\\d,.]+)$",
+      merchantRegex: "^(.+)(?=[A-Z]{3}\\s+[\\d,.]+)",
+      amountRegex: "([A-Z]{3})\\s+([\\d,.]+)",
       merchantGroupIndex: 1,
       currencyGroupIndex: 1, // Group 1 in amountRegex captures currency
       amountGroupIndex: 2,
