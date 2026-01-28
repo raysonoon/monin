@@ -21,6 +21,7 @@ import {
 import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import Feather from "@expo/vector-icons/Feather";
+import { parseDDMMYYYYToISO } from "../../utils/dateFormatter";
 
 interface TransactionDialogProps {
   visible: boolean;
@@ -160,7 +161,7 @@ export default function TransactionDialog({
       currency,
       type,
       category: selectedCategory.name,
-      date: new Date(date).toISOString(),
+      date: parseDDMMYYYYToISO(date),
       notes: notes.trim() || null,
       source: "User",
     };
