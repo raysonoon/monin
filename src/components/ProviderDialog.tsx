@@ -11,6 +11,8 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Feather from "@expo/vector-icons/Feather";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { db } from "../../db/client";
@@ -51,7 +53,7 @@ export default function ProviderDialog({
   const [transactionBlock, setTransactionBlock] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractionState | null>(
-    null
+    null,
   );
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controls visibility of the list
@@ -150,7 +152,7 @@ export default function ProviderDialog({
     if (!name.trim() || !subject.trim() || !address.trim()) {
       Alert.alert(
         "Missing Fields",
-        "Please fill in the name, subject, and email address."
+        "Please fill in the name, subject, and email address.",
       );
       return;
     }
@@ -162,7 +164,7 @@ export default function ProviderDialog({
     ) {
       Alert.alert(
         "Invalid Extraction",
-        "We couldn't generate a valid regex from your transaction block."
+        "We couldn't generate a valid regex from your transaction block.",
       );
       return;
     }
@@ -175,7 +177,7 @@ export default function ProviderDialog({
       // Generate location logic
       const { bodyStartMarker, bodyEndMarker } = generateSlicingMarkers(
         emailBody,
-        transactionBlock
+        transactionBlock,
       );
       // Generate config object (to string into JSON)
       const providerConfig = {
@@ -225,7 +227,7 @@ export default function ProviderDialog({
       console.error(error);
       Alert.alert(
         "Error",
-        "Failed to save payment provider. Name might be a duplicate."
+        "Failed to save payment provider. Name might be a duplicate.",
       );
     } finally {
       setIsSubmitting(false);
@@ -257,251 +259,263 @@ export default function ProviderDialog({
             }
           },
         },
-      ]
+      ],
     );
   };
 
   return (
     <Modal visible={visible} transparent>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
-          <Animated.View
-            entering={FadeIn.duration(400)} // Custom fade-in speed
-            exiting={FadeOut.duration(100)} // Custom fade-out speed
-          >
+      <SafeAreaView style={styles.safeArea}>
+        <TouchableWithoutFeedback onPress={onClose}>
+          <View style={styles.overlay}>
             <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-              <View style={styles.dialogContainer}>
-                <Text style={styles.title}>
-                  {providerToEdit
-                    ? "Edit Payment Provider"
-                    : "Add Payment Provider"}
-                </Text>
-                <Text style={styles.subtitle}>
-                  {providerToEdit
-                    ? "Update your provider details below"
-                    : "Configure a new payment provider by providing a sample email. Transaction data would be parsed automatically"}
-                </Text>
-
-                <ScrollView style={{ maxHeight: 600 }}>
-                  {/* Name Input */}
-                  <Text style={styles.label}>Provider name</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Revolut, MariBank, GrabPay"
-                    placeholderTextColor="#9ca3af"
-                    value={name}
-                    onChangeText={setName}
-                  />
-
-                  {/* Description Input */}
-                  <Text style={styles.label}>Provider description</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Savings account, Credit card"
-                    placeholderTextColor="#9ca3af"
-                    value={description ?? ""}
-                    onChangeText={setDescription}
-                  />
-
-                  {/* Email Subject */}
-                  <Text style={styles.label}>Email subject</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Card Transaction Alert"
-                    placeholderTextColor="#9ca3af"
-                    value={subject}
-                    onChangeText={setSubject}
-                  />
-
-                  {/* Sender Email Address */}
-                  <Text style={styles.label}>Email address</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. ibanking.alert@dbs.com"
-                    placeholderTextColor="#9ca3af"
-                    value={address}
-                    onChangeText={setAddress}
-                  />
-
-                  {/* Email Body */}
-                  <Text style={styles.label}>Full Email Body</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    multiline
-                    placeholder="Paste the full email body here..."
-                    placeholderTextColor="#9ca3af"
-                    value={emailBody}
-                    onChangeText={(text) => {
-                      setEmailBody(text);
-                    }}
-                  />
-
-                  {/* Transaction Block */}
-                  <Text style={styles.label}>Transaction Block</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    multiline
-                    placeholder="Paste transaction details here..."
-                    placeholderTextColor="#9ca3af"
-                    value={transactionBlock}
-                    onChangeText={(text) => {
-                      setTransactionBlock(text);
-                      if (!isDirty) setIsDirty(true);
-                    }}
-                  />
-
-                  <View>
-                    <Text style={styles.label}>
-                      Parsed Transaction Data - Review & Validate
-                    </Text>
-
-                    <ReadOnlyField
-                      label="Merchant"
-                      value={extractedData?.merchant ?? ""}
-                    />
-                    <ReadOnlyField
-                      label="Currency"
-                      value={extractedData?.currency ?? ""}
-                    />
-                    <ReadOnlyField
-                      label="Amount"
-                      value={extractedData?.amount ?? ""}
-                    />
-                  </View>
-
-                  {/* --- TYPE DROPDOWN --- */}
-                  <Text style={styles.label}>Type (TBC)</Text>
-
-                  {/* 1. The Trigger Button (Shows selection or placeholder) */}
-                  <TouchableOpacity
-                    style={[
-                      styles.dropdownTrigger,
-                      // Add red border if user tries to submit without selecting? (Optional)
-                    ]}
-                    onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+              <Animated.View
+                entering={FadeIn.duration(400)} // Custom fade-in speed
+                exiting={FadeOut.duration(100)} // Custom fade-out speed
+              >
+                <View style={styles.dialogContainer}>
+                  <Text style={styles.title}>
+                    {providerToEdit
+                      ? "Edit Payment Provider"
+                      : "Add Payment Provider"}
+                  </Text>
+                  <Text style={styles.subtitle}>
+                    {providerToEdit
+                      ? "Update your provider details below"
+                      : "Configure a new payment provider by providing a sample email. Transaction data would be parsed automatically"}
+                  </Text>
+                  <KeyboardAwareScrollView
+                    showsVerticalScrollIndicator={false}
+                    enableOnAndroid
+                    extraScrollHeight={150}
                   >
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      {selectedType ? (
-                        <>
-                          <Text style={{ fontSize: 18 }}>
-                            {
-                              TYPE_OPTIONS.find((t) => t.key === selectedType)
-                                ?.icon
-                            }
-                          </Text>
-                          <Text style={styles.triggerText}>
-                            {
-                              TYPE_OPTIONS.find((t) => t.key === selectedType)
-                                ?.label
-                            }
-                          </Text>
-                        </>
-                      ) : (
-                        <Text style={styles.placeholderText}>
-                          Select a type...
-                        </Text>
-                      )}
-                    </View>
-                    <Feather
-                      name={isDropdownOpen ? "chevron-up" : "chevron-down"}
-                      size={20}
-                      color="#6b7280"
+                    {/* Name Input */}
+                    <Text style={styles.label}>Provider name</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. Revolut, MariBank, GrabPay"
+                      placeholderTextColor="#9ca3af"
+                      value={name}
+                      onChangeText={setName}
                     />
-                  </TouchableOpacity>
 
-                  {/* 2. The List (Only renders when open) */}
-                  {isDropdownOpen && (
-                    <View style={styles.dropdownListContainer}>
-                      <ScrollView
-                        style={{ maxHeight: 150 }}
-                        nestedScrollEnabled
+                    {/* Description Input */}
+                    <Text style={styles.label}>Provider description</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. Savings account, Credit card"
+                      placeholderTextColor="#9ca3af"
+                      value={description ?? ""}
+                      onChangeText={setDescription}
+                    />
+
+                    {/* Email Subject */}
+                    <Text style={styles.label}>Email subject</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. Card Transaction Alert"
+                      placeholderTextColor="#9ca3af"
+                      value={subject}
+                      onChangeText={setSubject}
+                    />
+
+                    {/* Sender Email Address */}
+                    <Text style={styles.label}>Email address</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g. ibanking.alert@dbs.com"
+                      placeholderTextColor="#9ca3af"
+                      value={address}
+                      onChangeText={setAddress}
+                    />
+
+                    {/* Email Body */}
+                    <Text style={styles.label}>Full Email Body</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      multiline
+                      placeholder="Paste the full email body here..."
+                      placeholderTextColor="#9ca3af"
+                      value={emailBody}
+                      onChangeText={(text) => {
+                        setEmailBody(text);
+                      }}
+                    />
+
+                    {/* Transaction Block */}
+                    <Text style={styles.label}>Transaction Block</Text>
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      multiline
+                      placeholder="Paste transaction details here..."
+                      placeholderTextColor="#9ca3af"
+                      value={transactionBlock}
+                      onChangeText={(text) => {
+                        setTransactionBlock(text);
+                        if (!isDirty) setIsDirty(true);
+                      }}
+                    />
+
+                    <View>
+                      <Text style={styles.label}>
+                        Parsed Transaction Data - Review & Validate
+                      </Text>
+
+                      <ReadOnlyField
+                        label="Merchant"
+                        value={extractedData?.merchant ?? ""}
+                      />
+                      <ReadOnlyField
+                        label="Currency"
+                        value={extractedData?.currency ?? ""}
+                      />
+                      <ReadOnlyField
+                        label="Amount"
+                        value={extractedData?.amount ?? ""}
+                      />
+                    </View>
+
+                    {/* --- TYPE DROPDOWN --- */}
+                    <Text style={styles.label}>Type (TBC)</Text>
+
+                    {/* 1. The Trigger Button (Shows selection or placeholder) */}
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownTrigger,
+                        // Add red border if user tries to submit without selecting? (Optional)
+                      ]}
+                      onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
                       >
-                        {TYPE_OPTIONS.map((type) => (
-                          <TouchableOpacity
-                            key={type.key}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                              setSelectedType(type.key);
-                              setIsDropdownOpen(false);
-                            }}
-                          >
-                            <View
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                gap: 10,
+                        {selectedType ? (
+                          <>
+                            <Text style={{ fontSize: 18 }}>
+                              {
+                                TYPE_OPTIONS.find((t) => t.key === selectedType)
+                                  ?.icon
+                              }
+                            </Text>
+                            <Text style={styles.triggerText}>
+                              {
+                                TYPE_OPTIONS.find((t) => t.key === selectedType)
+                                  ?.label
+                              }
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={styles.placeholderText}>
+                            Select a type...
+                          </Text>
+                        )}
+                      </View>
+                      <Feather
+                        name={isDropdownOpen ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="#6b7280"
+                      />
+                    </TouchableOpacity>
+
+                    {/* 2. The List (Only renders when open) */}
+                    {isDropdownOpen && (
+                      <View style={styles.dropdownListContainer}>
+                        <ScrollView
+                          style={{ maxHeight: 150 }}
+                          nestedScrollEnabled
+                        >
+                          {TYPE_OPTIONS.map((type) => (
+                            <TouchableOpacity
+                              key={type.key}
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                setSelectedType(type.key);
+                                setIsDropdownOpen(false);
                               }}
                             >
-                              <Text style={{ fontSize: 16 }}>{type.icon}</Text>
-                              <Text style={styles.itemText}>{type.label}</Text>
-                            </View>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 10,
+                                }}
+                              >
+                                <Text style={{ fontSize: 16 }}>
+                                  {type.icon}
+                                </Text>
+                                <Text style={styles.itemText}>
+                                  {type.label}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
 
-                  {/* Action Buttons */}
-                  <View style={styles.footer}>
-                    <View style={{ flexDirection: "row" }}>
-                      {providerToEdit && (
+                    {/* Action Buttons */}
+                    <View style={styles.footer}>
+                      <View style={{ flexDirection: "row" }}>
+                        {providerToEdit && (
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            disabled={isSubmitting}
+                            onPress={handleDelete}
+                          >
+                            <Text style={styles.deleteButtonText}>Delete</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          gap: 12,
+                        }}
+                      >
                         <TouchableOpacity
-                          style={styles.deleteButton}
+                          style={styles.cancelButton}
+                          onPress={onClose}
                           disabled={isSubmitting}
-                          onPress={handleDelete}
                         >
-                          <Text style={styles.deleteButtonText}>Delete</Text>
+                          <Text style={styles.cancelButtonText}>Cancel</Text>
                         </TouchableOpacity>
-                      )}
+                        <TouchableOpacity
+                          style={styles.createButton}
+                          disabled={isSubmitting}
+                          onPress={handleSaveProvider}
+                        >
+                          <Text style={styles.createButtonText}>
+                            {isSubmitting
+                              ? "Saving..."
+                              : providerToEdit
+                                ? "Save"
+                                : "Create"}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 12,
-                      }}
-                    >
-                      <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={onClose}
-                        disabled={isSubmitting}
-                      >
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.createButton}
-                        disabled={isSubmitting}
-                        onPress={handleSaveProvider}
-                      >
-                        <Text style={styles.createButtonText}>
-                          {isSubmitting
-                            ? "Saving..."
-                            : providerToEdit
-                              ? "Save"
-                              : "Create"}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </ScrollView>
-              </View>
+                  </KeyboardAwareScrollView>
+                </View>
+              </Animated.View>
             </TouchableWithoutFeedback>
-          </Animated.View>
-        </View>
-      </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  safeArea: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  overlay: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
