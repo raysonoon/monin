@@ -8,9 +8,10 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
   Keyboard,
-  ScrollView,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { db } from "../../db/client";
 import {
@@ -218,266 +219,276 @@ export default function TransactionDialog({
 
   return (
     <Modal visible={visible} transparent animationType="none">
-      <TouchableWithoutFeedback
-        onPress={() => {
-          onClose();
-          closeAllDropdowns();
-        }}
-      >
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <Animated.View
-              entering={FadeIn.duration(300)}
-              exiting={FadeOut.duration(200)}
-              style={styles.dialogContainer}
-            >
-              <Text style={styles.title}>
-                {transactionToEdit ? "Edit" : "Add"} Transaction
-              </Text>
-              <Text style={styles.subtitle}>
-                Enter details below to update your records.
-              </Text>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 20 }}
-                keyboardShouldPersistTaps="handled"
+      <SafeAreaView style={styles.safeArea}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            onClose();
+            closeAllDropdowns();
+          }}
+        >
+          <View style={styles.overlay}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+              <Animated.View
+                entering={FadeIn.duration(300)}
+                exiting={FadeOut.duration(200)}
+                style={styles.dialogContainer}
               >
-                {/* Merchant */}
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Merchant</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Starbucks"
-                    placeholderTextColor="#9ca3af"
-                    value={merchant}
-                    onChangeText={setMerchant}
-                  />
-                </View>
-
-                {/* Amount & Currency */}
-                <View style={[styles.row, styles.fieldGroup]}>
-                  <View style={{ flex: 1.5 }}>
-                    <Text style={styles.label}>Amount</Text>
+                <Text style={styles.title}>
+                  {transactionToEdit ? "Edit" : "Add"} Transaction
+                </Text>
+                <Text style={styles.subtitle}>
+                  Enter details below to update your records.
+                </Text>
+                <KeyboardAwareScrollView
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                  enableOnAndroid
+                  extraScrollHeight={150}
+                  enableResetScrollToCoords={false}
+                >
+                  {/* Merchant */}
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Merchant</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="0.00"
+                      placeholder="e.g. Starbucks"
                       placeholderTextColor="#9ca3af"
-                      keyboardType="numeric"
-                      value={amount}
-                      onChangeText={setAmount}
+                      value={merchant}
+                      onChangeText={setMerchant}
                     />
                   </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.label}>Currency</Text>
+
+                  {/* Amount & Currency */}
+                  <View style={[styles.row, styles.fieldGroup]}>
+                    <View style={{ flex: 1.5 }}>
+                      <Text style={styles.label}>Amount</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder="0.00"
+                        placeholderTextColor="#9ca3af"
+                        keyboardType="numeric"
+                        value={amount}
+                        onChangeText={setAmount}
+                      />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.label}>Currency</Text>
+                      <TouchableOpacity
+                        style={styles.dropdownTrigger}
+                        onPress={() => {
+                          setIsCurrencyOpen(!isCurrencyOpen);
+                          setIsTypeOpen(false);
+                          setIsCategoryOpen(false);
+                        }}
+                      >
+                        <Text style={styles.triggerText}>{currency}</Text>
+                        <Feather
+                          name={isCurrencyOpen ? "chevron-up" : "chevron-down"}
+                          size={16}
+                          color="#6b7280"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Currency List */}
+                  {isCurrencyOpen && (
+                    <View style={styles.dropdownListContainer}>
+                      {CURRENCY_OPTIONS.map((cur) => (
+                        <TouchableOpacity
+                          key={cur}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setCurrency(cur);
+                            setIsCurrencyOpen(false);
+                          }}
+                        >
+                          <Text style={styles.itemText}>{cur}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Type Dropdown */}
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Type</Text>
                     <TouchableOpacity
                       style={styles.dropdownTrigger}
                       onPress={() => {
-                        setIsCurrencyOpen(!isCurrencyOpen);
-                        setIsTypeOpen(false);
+                        setIsTypeOpen(!isTypeOpen);
                         setIsCategoryOpen(false);
+                        setIsCurrencyOpen(false);
                       }}
                     >
-                      <Text style={styles.triggerText}>{currency}</Text>
+                      <View style={styles.triggerContent}>
+                        <Text style={{ fontSize: 18 }}>
+                          {TYPE_OPTIONS.find((t) => t.key === type)?.icon}
+                        </Text>
+                        <Text style={styles.triggerText}>
+                          {TYPE_OPTIONS.find((t) => t.key === type)?.label}
+                        </Text>
+                      </View>
                       <Feather
-                        name={isCurrencyOpen ? "chevron-up" : "chevron-down"}
-                        size={16}
+                        name={isTypeOpen ? "chevron-up" : "chevron-down"}
+                        size={18}
                         color="#6b7280"
                       />
                     </TouchableOpacity>
+                    {isTypeOpen && (
+                      <View style={styles.dropdownListContainer}>
+                        {TYPE_OPTIONS.map((item) => (
+                          <TouchableOpacity
+                            key={item.key}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setType(item.key as any);
+                              setIsTypeOpen(false);
+                            }}
+                          >
+                            <Text style={styles.itemText}>
+                              {item.icon} {item.label}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
                   </View>
-                </View>
 
-                {/* Currency List */}
-                {isCurrencyOpen && (
-                  <View style={styles.dropdownListContainer}>
-                    {CURRENCY_OPTIONS.map((cur) => (
+                  {/* Category Dropdown */}
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Category</Text>
+                    <TouchableOpacity
+                      style={styles.dropdownTrigger}
+                      onPress={() => {
+                        setIsCategoryOpen(!isCategoryOpen);
+                        setIsTypeOpen(false);
+                        setIsCurrencyOpen(false);
+                      }}
+                    >
+                      <View style={styles.triggerContent}>
+                        {selectedCategory ? (
+                          <>
+                            <Text style={{ fontSize: 18 }}>
+                              {selectedCategory.icon}
+                            </Text>
+                            <Text style={styles.triggerText}>
+                              {selectedCategory.name}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={styles.placeholderText}>
+                            Select category...
+                          </Text>
+                        )}
+                      </View>
+                      <Feather
+                        name={isCategoryOpen ? "chevron-up" : "chevron-down"}
+                        size={18}
+                        color="#6b7280"
+                      />
+                    </TouchableOpacity>
+                    {isCategoryOpen && (
+                      <View style={styles.dropdownListContainer}>
+                        {categoryList.map((cat) => (
+                          <TouchableOpacity
+                            key={cat.id}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setSelectedCategoryId(cat.id);
+                              setIsCategoryOpen(false);
+                            }}
+                          >
+                            <View style={styles.triggerContent}>
+                              <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
+                              <Text style={styles.itemText}>{cat.name}</Text>
+                            </View>
+                            <View
+                              style={[
+                                styles.dot,
+                                { backgroundColor: cat.color },
+                              ]}
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Date */}
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Date (DD/MM/YYYY) & Time</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={date}
+                      onChangeText={setDate}
+                    />
+                  </View>
+
+                  {/* Notes */}
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Notes (Optional)</Text>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        { height: 70, textAlignVertical: "top" },
+                      ]}
+                      multiline
+                      value={notes}
+                      onChangeText={setNotes}
+                    />
+                  </View>
+
+                  {/* Footer Buttons */}
+                  <View style={styles.footer}>
+                    {transactionToEdit && (
                       <TouchableOpacity
-                        key={cur}
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                          setCurrency(cur);
-                          setIsCurrencyOpen(false);
-                        }}
+                        style={styles.deleteButton}
+                        onPress={handleDelete}
                       >
-                        <Text style={styles.itemText}>{cur}</Text>
+                        <Text style={styles.deleteButtonText}>Delete</Text>
                       </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-
-                {/* Type Dropdown */}
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Type</Text>
-                  <TouchableOpacity
-                    style={styles.dropdownTrigger}
-                    onPress={() => {
-                      setIsTypeOpen(!isTypeOpen);
-                      setIsCategoryOpen(false);
-                      setIsCurrencyOpen(false);
-                    }}
-                  >
-                    <View style={styles.triggerContent}>
-                      <Text style={{ fontSize: 18 }}>
-                        {TYPE_OPTIONS.find((t) => t.key === type)?.icon}
-                      </Text>
-                      <Text style={styles.triggerText}>
-                        {TYPE_OPTIONS.find((t) => t.key === type)?.label}
-                      </Text>
-                    </View>
-                    <Feather
-                      name={isTypeOpen ? "chevron-up" : "chevron-down"}
-                      size={18}
-                      color="#6b7280"
-                    />
-                  </TouchableOpacity>
-                  {isTypeOpen && (
-                    <View style={styles.dropdownListContainer}>
-                      {TYPE_OPTIONS.map((item) => (
-                        <TouchableOpacity
-                          key={item.key}
-                          style={styles.dropdownItem}
-                          onPress={() => {
-                            setType(item.key as any);
-                            setIsTypeOpen(false);
-                          }}
-                        >
-                          <Text style={styles.itemText}>
-                            {item.icon} {item.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
-
-                {/* Category Dropdown */}
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Category</Text>
-                  <TouchableOpacity
-                    style={styles.dropdownTrigger}
-                    onPress={() => {
-                      setIsCategoryOpen(!isCategoryOpen);
-                      setIsTypeOpen(false);
-                      setIsCurrencyOpen(false);
-                    }}
-                  >
-                    <View style={styles.triggerContent}>
-                      {selectedCategory ? (
-                        <>
-                          <Text style={{ fontSize: 18 }}>
-                            {selectedCategory.icon}
-                          </Text>
-                          <Text style={styles.triggerText}>
-                            {selectedCategory.name}
-                          </Text>
-                        </>
-                      ) : (
-                        <Text style={styles.placeholderText}>
-                          Select category...
+                    )}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 12,
+                        marginLeft: "auto",
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={onClose}
+                      >
+                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.createButton}
+                        onPress={handleSave}
+                        disabled={isSubmitting}
+                      >
+                        <Text style={styles.createButtonText}>
+                          {isSubmitting ? "Saving..." : "Save"}
                         </Text>
-                      )}
+                      </TouchableOpacity>
                     </View>
-                    <Feather
-                      name={isCategoryOpen ? "chevron-up" : "chevron-down"}
-                      size={18}
-                      color="#6b7280"
-                    />
-                  </TouchableOpacity>
-                  {isCategoryOpen && (
-                    <View style={styles.dropdownListContainer}>
-                      {categoryList.map((cat) => (
-                        <TouchableOpacity
-                          key={cat.id}
-                          style={styles.dropdownItem}
-                          onPress={() => {
-                            setSelectedCategoryId(cat.id);
-                            setIsCategoryOpen(false);
-                          }}
-                        >
-                          <View style={styles.triggerContent}>
-                            <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
-                            <Text style={styles.itemText}>{cat.name}</Text>
-                          </View>
-                          <View
-                            style={[styles.dot, { backgroundColor: cat.color }]}
-                          />
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
-
-                {/* Date */}
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Date (DD/MM/YYYY) & Time</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={date}
-                    onChangeText={setDate}
-                  />
-                </View>
-
-                {/* Notes */}
-                <View style={styles.fieldGroup}>
-                  <Text style={styles.label}>Notes (Optional)</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      { height: 70, textAlignVertical: "top" },
-                    ]}
-                    multiline
-                    value={notes}
-                    onChangeText={setNotes}
-                  />
-                </View>
-
-                {/* Footer Buttons */}
-                <View style={styles.footer}>
-                  {transactionToEdit && (
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={handleDelete}
-                    >
-                      <Text style={styles.deleteButtonText}>Delete</Text>
-                    </TouchableOpacity>
-                  )}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      gap: 12,
-                      marginLeft: "auto",
-                    }}
-                  >
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={onClose}
-                    >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.createButton}
-                      onPress={handleSave}
-                      disabled={isSubmitting}
-                    >
-                      <Text style={styles.createButtonText}>
-                        {isSubmitting ? "Saving..." : "Save"}
-                      </Text>
-                    </TouchableOpacity>
                   </View>
-                </View>
-              </ScrollView>
-            </Animated.View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+                </KeyboardAwareScrollView>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  safeArea: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  overlay: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

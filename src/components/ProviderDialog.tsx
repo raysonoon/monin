@@ -288,6 +288,7 @@ export default function ProviderDialog({
                     showsVerticalScrollIndicator={false}
                     enableOnAndroid
                     extraScrollHeight={150}
+                    enableResetScrollToCoords={false}
                   >
                     {/* Name Input */}
                     <Text style={styles.label}>Provider name</Text>
