@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f3f4f6", // Light gray background
     borderRadius: 12,
     padding: 14,
-    marginBottom: 10,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
@@ -386,6 +386,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 20,
   },
   deleteButton: {
     paddingVertical: 10,
