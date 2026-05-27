@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 15,
     elevation: 3,
-    height: 300,
+    height: 360,
   },
   legendContainer: {
     flexDirection: "row",
