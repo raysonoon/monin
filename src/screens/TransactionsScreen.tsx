@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,15 +14,17 @@ import {
   Transaction,
   categories as categoriesSchema,
 } from "../../db/schema";
+import { DateType } from "react-native-ui-datepicker";
+import DateDialog from "../components/DateDialog";
 import TransactionDialog from "../components/TransactionDialog";
 import { getCategoryColorMap } from "../services/transaction/transactionHelper";
 
 export const TransactionsScreen = () => {
   const { data: transactions = [] } = useLiveQuery(
-    db.select().from(transactionsSchema)
+    db.select().from(transactionsSchema),
   );
   const { data: categories = [] } = useLiveQuery(
-    db.select().from(categoriesSchema)
+    db.select().from(categoriesSchema),
   );
 
   const [isDialogVisible, setIsDialogVisible] = useState(false);
@@ -43,10 +45,37 @@ export const TransactionsScreen = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
+  const [selectedCurrency, setSelectedCurrency] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   const colorMap = useMemo(() => getCategoryColorMap(categories), [categories]);
+
+  // Date filter
+  const [range, setRange] = useState<{
+    startDate: DateType;
+    endDate: DateType;
+  }>({ startDate: undefined, endDate: undefined });
+
+  const [isDateDialogVisible, setIsDateDialogVisible] = useState(false);
+
+  const inRange = (
+    dateIso: string,
+    r: { startDate: DateType; endDate: DateType },
+  ) => {
+    if (!r.startDate || !r.endDate) return true;
+
+    const tx = new Date(dateIso).getTime();
+    const start = new Date(r.startDate as Date).setHours(0, 0, 0, 0);
+    const end = new Date(r.endDate as Date).setHours(23, 59, 59, 999);
+
+    return tx >= start && tx <= end;
+  };
+  // Currency chips
+  const currencies = useMemo(() => {
+    const unique = Array.from(new Set(transactions.map((t) => t.currency)));
+    return ["All", ...unique];
+  }, [transactions]);
 
   // --- 1. Filter Logic ---
   const filteredData = useMemo(() => {
@@ -58,11 +87,28 @@ export const TransactionsScreen = () => {
         const matchesCat =
           selectedCategory === "All" || t.category === selectedCategory;
         const matchesType = selectedType === "All" || t.type === selectedType;
+        const matchesCurrency =
+          selectedCurrency === "All" || t.currency === selectedCurrency;
+        const matchesDate = inRange(t.date, range);
 
-        return matchesSearch && matchesCat && matchesType;
+        return (
+          matchesSearch &&
+          matchesCat &&
+          matchesType &&
+          matchesCurrency &&
+          matchesDate
+        );
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [transactions, search, selectedCategory, selectedType]);
+  }, [
+    transactions,
+    search,
+    selectedCategory,
+    selectedType,
+    selectedCurrency,
+    inRange,
+    range,
+  ]);
 
   // --- 2. Pagination Logic ---
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -79,9 +125,15 @@ export const TransactionsScreen = () => {
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.amount, 0);
 
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedCategory, selectedType, selectedCurrency, range]);
+
   return (
     <View>
       <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.header}>Transactions</Text>
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
           <View style={styles.card}>
@@ -102,6 +154,24 @@ export const TransactionsScreen = () => {
           </View>
         </View>
 
+        {/* Date Filter */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Date range</Text>
+          <TouchableOpacity onPress={() => setIsDateDialogVisible(true)}>
+            <TextInput
+              style={styles.dateInput}
+              value={
+                range.startDate && range.endDate
+                  ? `${new Date(range.startDate as Date).toLocaleDateString()} - ${new Date(range.endDate as Date).toLocaleDateString()}`
+                  : ""
+              }
+              placeholder="Choose date range"
+              placeholderTextColor="#9ca3af"
+              editable={false}
+            />
+          </TouchableOpacity>
+        </View>
+
         {/* Filter Bar */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Search</Text>
@@ -112,6 +182,34 @@ export const TransactionsScreen = () => {
             onChangeText={setSearch}
           />
         </View>
+
+        {/* Currency */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.filterRow}>
+            {currencies.map((c) => (
+              <TouchableOpacity
+                key={c}
+                onPress={() => {
+                  setSelectedCurrency(c);
+                  setCurrentPage(1);
+                }}
+                style={[
+                  styles.filterChip,
+                  c === selectedCurrency && styles.filterChipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    c === selectedCurrency && styles.filterChipTextActive,
+                  ]}
+                >
+                  {c}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
 
         {/* Transactions Table */}
         <View style={styles.tableCard}>
@@ -197,12 +295,12 @@ export const TransactionsScreen = () => {
             </Text>
 
             <TouchableOpacity
-              disabled={currentPage === totalPages}
+              disabled={currentPage >= totalPages}
               onPress={() => setCurrentPage((p) => p + 1)}
             >
               <Text
                 style={
-                  currentPage === totalPages
+                  currentPage >= totalPages
                     ? styles.disabledNext
                     : styles.activeNext
                 }
@@ -213,6 +311,13 @@ export const TransactionsScreen = () => {
           </View>
         </View>
       </ScrollView>
+      <DateDialog
+        visible={isDateDialogVisible}
+        value={range}
+        onApply={setRange}
+        onClose={() => setIsDateDialogVisible(false)}
+        onClear={() => setRange({ startDate: undefined, endDate: undefined })}
+      />
       <TransactionDialog
         visible={isDialogVisible}
         onClose={handleCloseDialog}
@@ -223,12 +328,21 @@ export const TransactionsScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  header: {
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
   container: {
     padding: 20,
     paddingBottom: 40,
     backgroundColor: "#fff",
   },
   summaryRow: { flexDirection: "row", gap: 12 },
+  dateContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
   card: {
     flex: 1,
     backgroundColor: "#fff",
@@ -238,7 +352,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
   },
   cardLabel: {
@@ -251,13 +365,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 10,
   },
+  dateInput: {
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+    color: "#1f2937",
+    marginBottom: 6,
+  },
   searchInput: {
     backgroundColor: "#f3f4f6",
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
     color: "#1f2937",
-    marginBottom: 20,
+    marginBottom: 6,
   },
   tableCard: {
     backgroundColor: "#fff",
@@ -324,5 +446,27 @@ const styles = StyleSheet.create({
   disabledNext: {
     color: "#d1d5db",
     opacity: 0.5,
+  },
+  filterRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#f3f4f6",
+  },
+  filterChipActive: {
+    backgroundColor: "#111827",
+  },
+  filterChipText: {
+    fontSize: 12,
+    color: "#374151",
+    fontWeight: "600",
+  },
+  filterChipTextActive: {
+    color: "#fff",
   },
 });
