@@ -82,7 +82,8 @@ export const HomeScreen = () => {
   const netCashFlow = useMemo(
     () =>
       transactions.reduce(
-        (acc, t) => (t.type === "income" ? acc + t.amount : acc - t.amount),
+        (acc, t) =>
+          t.type === "income" ? acc + t.baseAmount : acc - t.baseAmount,
         0
       ),
     [transactions]
@@ -112,10 +113,10 @@ export const HomeScreen = () => {
       const getTotals = (ts: Transaction[]) => {
         const income = ts
           .filter((t) => t.type === "income")
-          .reduce((acc, t) => acc + t.amount, 0);
+          .reduce((acc, t) => acc + t.baseAmount, 0);
         const expense = ts
           .filter((t) => t.type === "expense")
-          .reduce((acc, t) => acc + t.amount, 0);
+          .reduce((acc, t) => acc + t.baseAmount, 0);
         return { income, expense, net: income - expense };
       };
 

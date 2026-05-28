@@ -31,8 +31,8 @@ export const getMonthlyCashFlow = (transactions: Transaction[]) => {
     const monthName = months[date.getMonth()];
 
     if (monthName && map[monthName]) {
-      if (t.type === "income") map[monthName].income += t.amount;
-      else map[monthName].expense += t.amount;
+      if (t.type === "income") map[monthName].income += t.baseAmount;
+      else map[monthName].expense += t.baseAmount;
     }
   });
 
@@ -49,7 +49,7 @@ export const getCategorySpending = (
   transactions
     .filter((t) => t.type === "expense")
     .forEach((t) => {
-      totals[t.category] = (totals[t.category] || 0) + t.amount;
+      totals[t.category] = (totals[t.category] || 0) + t.baseAmount;
     });
 
   return Object.entries(totals).map(([name, amount]) => ({

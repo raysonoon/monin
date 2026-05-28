@@ -21,10 +21,10 @@ import { getCategoryColorMap } from "../services/transaction/transactionHelper";
 
 export const TransactionsScreen = () => {
   const { data: transactions = [] } = useLiveQuery(
-    db.select().from(transactionsSchema),
+    db.select().from(transactionsSchema)
   );
   const { data: categories = [] } = useLiveQuery(
-    db.select().from(categoriesSchema),
+    db.select().from(categoriesSchema)
   );
 
   const [isDialogVisible, setIsDialogVisible] = useState(false);
@@ -61,7 +61,7 @@ export const TransactionsScreen = () => {
 
   const inRange = (
     dateIso: string,
-    r: { startDate: DateType; endDate: DateType },
+    r: { startDate: DateType; endDate: DateType }
   ) => {
     if (!r.startDate || !r.endDate) return true;
 
@@ -119,11 +119,11 @@ export const TransactionsScreen = () => {
 
   // --- 3. Summary Totals ---
   const totalIncome = transactions
-    .filter((t) => t.type === "income")
-    .reduce((s, t) => s + t.amount, 0);
+    .filter((t) => t.type === "income" && t.baseAmount)
+    .reduce((s, t) => s + t.baseAmount, 0);
   const totalExpense = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((s, t) => s + t.amount, 0);
+    .filter((t) => t.type === "expense" && t.baseAmount)
+    .reduce((s, t) => s + t.baseAmount, 0);
 
   // Reset pagination when filter changes
   useEffect(() => {
@@ -271,6 +271,12 @@ export const TransactionsScreen = () => {
                   {item.type === "income" ? "+" : "-"} {item.amount.toFixed(2)}
                 </Text>
                 <Text style={styles.transactionCurrency}>{item.currency}</Text>
+
+                {item.currency !== "SGD" && item.baseAmount ? (
+                  <Text style={styles.transactionBaseAmount}>
+                    SGD {item.baseAmount.toFixed(2)}
+                  </Text>
+                ) : null}
               </View>
             </TouchableOpacity>
           ))}
@@ -426,6 +432,11 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: 2,
     textAlign: "right",
+  },
+  transactionBaseAmount: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
   },
   paginationRow: {
     flexDirection: "row",
