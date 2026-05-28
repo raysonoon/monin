@@ -23,6 +23,7 @@ import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import Feather from "@expo/vector-icons/Feather";
 import { parseDDMMYYYYToISO } from "../../utils/dateFormatter";
+import { convertToSGD } from "../services/fxService";
 
 interface TransactionDialogProps {
   visible: boolean;
@@ -156,15 +157,27 @@ export default function TransactionDialog({
 
     setIsSubmitting(true);
 
+    const isoDate = parseDDMMYYYYToISO(date);
+
+    const { baseAmount, fxRate, fxDate } = await convertToSGD(
+      parseFloat(amount),
+      currency,
+      isoDate
+    );
+
     const transactionData = {
       merchant: merchant.trim(),
       amount: parseFloat(amount),
       currency,
       type,
       category: selectedCategory.name,
-      date: parseDDMMYYYYToISO(date),
+      date: isoDate,
       notes: notes.trim() || null,
       source: "User",
+      baseCurrency: "SGD",
+      baseAmount,
+      fxRate,
+      fxDate,
     };
 
     try {
@@ -259,7 +272,7 @@ export default function TransactionDialog({
                   </View>
 
                   {/* Amount & Currency */}
-                  <View style={[styles.row, styles.fieldGroup]}>
+                  <View style={styles.row}>
                     <View style={{ flex: 1.5 }}>
                       <Text style={styles.label}>Amount</Text>
                       <TextInput
@@ -534,7 +547,6 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: "#1f2937",
-    marginBottom: 20,
   },
   readOnlyBox: {
     backgroundColor: "#f3f4f6",
@@ -547,7 +559,7 @@ const styles = StyleSheet.create({
   dropdownTrigger: {
     backgroundColor: "#f3f4f6",
     borderRadius: 12,
-    padding: 14,
+    padding: 12,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -600,6 +612,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   footer: {
+    marginTop: 4,
     flexDirection: "row",
     justifyContent: "space-between",
   },
