@@ -1,6 +1,8 @@
 import { htmlToText } from "html-to-text";
 import { parseEmailWithProvider } from "../../../utils/gmailParser";
 import { categorizationService } from "../categorizationService";
+import { convertToSGD } from "../fxService";
+
 import type {
   GmailHeader,
   GmailPayload,
@@ -15,6 +17,11 @@ import {
   transactions,
   NewTransaction,
 } from "../../../db/schema";
+
+type ParsedTransaction = Omit<
+  NewTransaction,
+  "baseCurrency" | "baseAmount" | "fxRate" | "fxDate"
+>;
 
 /**
  * Lists email message IDs matching the provider's specific query.
@@ -94,7 +101,7 @@ const parseEmail = async (
     // Determine category based on the extracted merchant name
     const category = categorizationService.categorizeMerchant(merchantName);
 
-    const parsedTransaction: NewTransaction = {
+    const parsedTransaction: ParsedTransaction = {
       emailId: messageId,
       providerId: provider.id,
       merchant: extractedData?.merchant ?? "Unknown",
@@ -106,8 +113,22 @@ const parseEmail = async (
       type: "expense",
     };
 
-    console.log("Parsed Transaction:", parsedTransaction);
-    return parsedTransaction;
+    const { baseAmount, fxRate, fxDate } = await convertToSGD(
+      parsedTransaction.amount,
+      parsedTransaction.currency,
+      parsedTransaction.date
+    );
+
+    const parsedTransactionWithBase: NewTransaction = {
+      ...parsedTransaction,
+      baseCurrency: "SGD",
+      baseAmount,
+      fxRate,
+      fxDate,
+    };
+
+    console.log("Parsed Transaction after fx:", parsedTransactionWithBase);
+    return parsedTransactionWithBase;
   } catch (err) {
     console.error(`Failed to parse email ${messageId}:`, err);
     return null;
