@@ -8,6 +8,20 @@
       "when": 1766938264846,
       "tag": "0000_sleepy_bloodaxe",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779870523017,
+      "tag": "0001_nappy_talos",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779939130463,
+      "tag": "0002_bumpy_zaran",
+      "breakpoints": true
     }
   ]
 }

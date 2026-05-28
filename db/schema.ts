@@ -60,6 +60,12 @@ export const transactions = sqliteTable("transactions", {
   currency: text("currency").notNull(),
   date: text("date").notNull(),
 
+  // SGD base conversion
+  baseCurrency: text("base_currency").notNull().default("SGD"),
+  baseAmount: real("base_amount").notNull(), // set after FX conversion
+  fxRate: real("fx_rate"), // rate used for conversion
+  fxDate: text("fx_date"), // YYYY-MM-DD used for the rate
+
   // Categorization
   category: text("category").notNull(),
   source: text("source").notNull(),
