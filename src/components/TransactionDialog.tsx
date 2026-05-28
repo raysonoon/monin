@@ -150,8 +150,8 @@ export default function TransactionDialog({
       return;
     }
 
-    if (!selectedCategory) {
-      Alert.alert("Missing Fields", "Please select a category");
+    if (!amount) {
+      Alert.alert("Missing Amount", "Please fill in amount");
       return;
     }
 
@@ -170,7 +170,7 @@ export default function TransactionDialog({
       amount: parseFloat(amount),
       currency,
       type,
-      category: selectedCategory.name,
+      category: selectedCategory?.name ?? "Uncategorized",
       date: isoDate,
       notes: notes.trim() || null,
       source: "User",
