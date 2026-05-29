@@ -34,8 +34,9 @@ const AuthContext = createContext({
   fetchWithAuth: (url: string, options: RequestInit) =>
     Promise.resolve(new Response()),
   isLoading: false,
-  error: null as AuthError | null,
+  error: null as AuthError | string | null,
   ensureGoogleAccessToken: async () => null as string | null,
+  authStatusMessage: null as string | null,
 });
 
 const config: AuthRequestConfig = {
@@ -67,6 +68,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [googleRefreshToken, setGoogleRefreshToken] = useState<string | null>(
     null
   );
+  const [authStatusMessage, setAuthStatusMessage] = useState<string | null>(
+    null
+  );
+
   const [request, response, promptAsync] = useAuthRequest(config, discovery);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<AuthError | null>(null);
@@ -74,31 +79,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshInProgressRef = useRef(false);
 
   // Function to refresh Google access token - declared early for use in useEffect
-  const refreshGoogleAccessToken = async (): Promise<string | null> => {
-    if (!googleRefreshToken) return null;
-
-    const response = await fetch(`${BASE_URL}/api/auth/google/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ googleRefreshToken }),
-    });
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    setGoogleAccessToken(data.googleAccessToken);
-    if (data.expiresIn) {
-      const expiresAt = Date.now() + data.expiresIn * 1000;
-      setGoogleAccessTokenExpiresAt(expiresAt);
-      await tokenCache?.saveToken(
-        "googleAccessTokenExpiresAt",
-        String(expiresAt)
-      );
-    }
-    // if (data.googleRefreshToken) setGoogleRefreshToken(data.googleRefreshToken);
-    await tokenCache?.saveToken("googleAccessToken", data.googleAccessToken);
-    return data.googleAccessToken;
-  };
 
   useEffect(() => {
     handleResponse();
@@ -375,7 +355,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       refreshInProgressRef.current = false;
     }
-  }
+  };
+
+  const refreshGoogleAccessToken = async (): Promise<string | null> => {
+    if (!googleRefreshToken) {
+      signOut("Google session expired. Please reconnect Gmail.");
+      return null;
+    }
+
+    const response = await fetch(`${BASE_URL}/api/auth/google/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ googleRefreshToken }),
+    });
+
+    if (!response.ok) {
+      signOut("Google session expired. Please reconnect Gmail.");
+      return null;
+    }
+
+    const data = await response.json();
+    setGoogleAccessToken(data.googleAccessToken);
+
+    if (data.expiresIn) {
+      const expiresAt = Date.now() + data.expiresIn * 1000;
+      setGoogleAccessTokenExpiresAt(expiresAt);
+      await tokenCache?.saveToken(
+        "googleAccessTokenExpiresAt",
+        String(expiresAt)
+      );
+    }
+    // if (data.googleRefreshToken) setGoogleRefreshToken(data.googleRefreshToken);
+    await tokenCache?.saveToken("googleAccessToken", data.googleAccessToken);
+    return data.googleAccessToken;
+  };
 
   const isGoogleAccessTokenValid = () => {
     const bufferMs = 60 * 1000; // refresh 1 min before expiry
@@ -603,7 +616,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signOut = async () => {
+  const signOut = async (reason?: string) => {
     if (isWeb) {
       // For web: Call logout endpoint to clear the cookie
       try {
@@ -619,6 +632,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await tokenCache?.deleteToken("accessToken");
       await tokenCache?.deleteToken("refreshToken");
       await tokenCache?.deleteToken("googleAccessToken");
+      await tokenCache?.deleteToken("googleAccessTokenExpiresAt");
       await tokenCache?.deleteToken("googleRefreshToken");
     }
 
@@ -627,6 +641,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setAccessToken(null);
     setRefreshToken(null);
     setGoogleAccessToken(null);
+    setGoogleAccessTokenExpiresAt(null);
+    setGoogleRefreshToken(null);
+    setAuthStatusMessage(reason ?? null);
   };
 
   return (
@@ -639,6 +656,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         error,
         fetchWithAuth,
         ensureGoogleAccessToken,
+        authStatusMessage,
       }}
     >
       {children}

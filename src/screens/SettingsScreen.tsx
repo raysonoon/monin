@@ -34,6 +34,7 @@ export const SettingsScreen = () => {
     listEmails,
     isSyncing,
     syncError,
+    authStatusMessage,
   } = useGmail();
 
   // Provider dialog state
@@ -82,7 +83,7 @@ export const SettingsScreen = () => {
 
   const { data: providers } = useLiveQuery(
     db.select().from(providersSchema), // providersSchema refers to table definition, while categories is actual data from DB
-    []
+    [],
   );
 
   const renderSyncPreview = () => {
@@ -136,7 +137,7 @@ export const SettingsScreen = () => {
 
   const { data: categories } = useLiveQuery(
     db.select().from(categoriesSchema), // categoriesSchema refers to table definition, while categories is actual data from DB
-    []
+    [],
   );
 
   useEffect(() => {
@@ -145,13 +146,13 @@ export const SettingsScreen = () => {
 
   const { data: categorizationRules } = useLiveQuery(
     db.select().from(catRulesSchema), // catRulesSchema refers to table definition for categorization rules
-    []
+    [],
   );
 
   useEffect(() => {
     console.log(
       "Categorization rules updated in UI:",
-      categorizationRules?.length
+      categorizationRules?.length,
     );
   }, [categorizationRules]);
 
@@ -172,7 +173,15 @@ export const SettingsScreen = () => {
       <View style={styles.section}>
         <Text style={styles.title}>Gmail Connection</Text>
         <Text>{user ? `${user.email} connected` : "No email connected"}</Text>
-
+        {!user && authStatusMessage ? (
+          <View style={styles.sessionBanner}>
+            {" "}
+            <Feather name="alert-circle" size={14} color="#92400e" />{" "}
+            <Text style={styles.sessionBannerText}>
+              {authStatusMessage}
+            </Text>{" "}
+          </View>
+        ) : null}
         {user ? (
           <TouchableOpacity
             style={[styles.button, { backgroundColor: "#dc2626" }]}
@@ -328,7 +337,7 @@ export const SettingsScreen = () => {
         </View>
         {categorizationRules.map((merchant) => {
           const category = categories.find(
-            (cat) => cat.id === merchant.categoryId
+            (cat) => cat.id === merchant.categoryId,
           );
           return (
             <View key={merchant.keyword} style={styles.categoryBox}>
@@ -389,6 +398,23 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1, // Takes up remaining space
     marginRight: 10,
+  },
+  sessionBanner: {
+    marginTop: 10,
+    backgroundColor: "#fef3c7",
+    borderColor: "#fde68a",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sessionBannerText: {
+    color: "#92400e",
+    fontSize: 13,
+    flex: 1,
   },
   emptyPreview: {
     flexDirection: "row",

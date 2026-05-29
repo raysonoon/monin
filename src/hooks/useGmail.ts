@@ -1,15 +1,29 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "../context/auth";
 import { syncAllTransactions } from "../services/gmail/gmailService";
 import type { ParsedTransaction } from "../types/transaction";
 
 export const useGmail = () => {
-  const { user, isLoading, signIn, signOut, ensureGoogleAccessToken } =
-    useAuth();
+  const {
+    user,
+    isLoading,
+    authStatusMessage,
+    signIn,
+    signOut,
+    ensureGoogleAccessToken,
+  } = useAuth();
 
   const [emailData, setEmailData] = useState<ParsedTransaction | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setEmailData(null);
+      setIsSyncing(false);
+      setSyncError(authStatusMessage ?? null);
+    }
+  }, [user, authStatusMessage]);
 
   const listEmails = useCallback(async () => {
     setIsSyncing(true);
@@ -67,5 +81,6 @@ export const useGmail = () => {
     listEmails,
     isSyncing,
     syncError,
+    authStatusMessage,
   };
 };
