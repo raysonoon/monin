@@ -139,6 +139,7 @@ export async function POST(request: Request) {
     accessToken,
     refreshToken,
     googleAccessToken: data.access_token,
+    googleAccessTokenExpiry: data.expires_in,
     googleRefreshToken: data.refresh_token,
   });
 }

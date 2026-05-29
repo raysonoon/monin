@@ -4,27 +4,23 @@ import { syncAllTransactions } from "../services/gmail/gmailService";
 import type { ParsedTransaction } from "../types/transaction";
 
 export const useGmail = () => {
-  const { user, isLoading, googleAccessToken, signIn, signOut } = useAuth();
+  const { user, isLoading, signIn, signOut, ensureGoogleAccessToken } =
+    useAuth();
 
   const [emailData, setEmailData] = useState<ParsedTransaction | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
   const listEmails = useCallback(async () => {
-    if (!googleAccessToken) {
-      setSyncError("Not connected to Gmail.");
-      return;
-    }
-
     setIsSyncing(true);
     setSyncError(null);
-
     try {
-      // Note: In the final version, you would use syncAllTransactions
-      // For the initial 'Run Test' button, we'll keep the PayLah test specific.
-      // This assumes you refactored the original PayLah logic into its own provider/function
+      const googleAccessToken = await ensureGoogleAccessToken();
 
-      // For now, let's call the generic sync, and just use the first result for display
+      if (!googleAccessToken) {
+        setSyncError("Not connected to Gmail.");
+        return;
+      }
       const transactions = await syncAllTransactions(googleAccessToken);
 
       if (transactions.length > 0) {
@@ -57,7 +53,7 @@ export const useGmail = () => {
     } finally {
       setIsSyncing(false);
     }
-  }, [googleAccessToken]);
+  }, [ensureGoogleAccessToken]);
 
   return {
     // Auth State

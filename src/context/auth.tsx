@@ -35,7 +35,7 @@ const AuthContext = createContext({
     Promise.resolve(new Response()),
   isLoading: false,
   error: null as AuthError | null,
-  googleAccessToken: null as string | null,
+  ensureGoogleAccessToken: async () => null as string | null,
 });
 
 const config: AuthRequestConfig = {
@@ -61,11 +61,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(
     null
   );
+  const [googleAccessTokenExpiresAt, setGoogleAccessTokenExpiresAt] = useState<
+    number | null
+  >(null);
+  const [googleRefreshToken, setGoogleRefreshToken] = useState<string | null>(
+    null
+  );
   const [request, response, promptAsync] = useAuthRequest(config, discovery);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<AuthError | null>(null);
   const isWeb = Platform.OS === "web";
   const refreshInProgressRef = useRef(false);
+
+  // Function to refresh Google access token - declared early for use in useEffect
+  const refreshGoogleAccessToken = async (): Promise<string | null> => {
+    if (!googleRefreshToken) return null;
+
+    const response = await fetch(`${BASE_URL}/api/auth/google/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ googleRefreshToken }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    setGoogleAccessToken(data.googleAccessToken);
+    if (data.expiresIn) {
+      const expiresAt = Date.now() + data.expiresIn * 1000;
+      setGoogleAccessTokenExpiresAt(expiresAt);
+      await tokenCache?.saveToken(
+        "googleAccessTokenExpiresAt",
+        String(expiresAt)
+      );
+    }
+    // if (data.googleRefreshToken) setGoogleRefreshToken(data.googleRefreshToken);
+    await tokenCache?.saveToken("googleAccessToken", data.googleAccessToken);
+    return data.googleAccessToken;
+  };
 
   useEffect(() => {
     handleResponse();
@@ -100,6 +133,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // For native: Try to use the stored access token first
           const storedAccessToken = await tokenCache?.getToken("accessToken");
           const storedRefreshToken = await tokenCache?.getToken("refreshToken");
+          const storedGoogleAccessToken =
+            await tokenCache?.getToken("googleAccessToken");
+          const storedGoogleAccessTokenExpiresAt = await tokenCache?.getToken(
+            "googleAccessTokenExpiresAt"
+          );
+          const storedGoogleRefreshToken =
+            await tokenCache?.getToken("googleRefreshToken");
 
           console.log(
             "Restoring session - Access token:",
@@ -108,6 +148,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log(
             "Restoring session - Refresh token:",
             storedRefreshToken ? "exists" : "missing"
+          );
+          console.log(
+            "Google - Access token:",
+            storedGoogleAccessToken ? "exists" : "missing"
+          );
+          console.log(
+            "Google - Refresh token:",
+            storedGoogleRefreshToken ? "exists" : "missing"
           );
 
           if (storedAccessToken) {
@@ -150,6 +198,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await refreshAccessToken(storedRefreshToken);
           } else {
             console.log("User is not authenticated");
+          }
+
+          if (storedGoogleAccessToken && storedGoogleAccessTokenExpiresAt) {
+            try {
+              const expiresAt = Number(storedGoogleAccessTokenExpiresAt);
+              if (!Number.isNaN(expiresAt) && Date.now() < expiresAt) {
+                setGoogleAccessToken(storedGoogleAccessToken);
+                setGoogleAccessTokenExpiresAt(expiresAt);
+              } else {
+                await refreshGoogleAccessToken();
+              }
+            } catch (e) {
+              console.error("Error retrieving google access token expiry:", e);
+            }
+          } else if (storedGoogleRefreshToken) {
+            await refreshGoogleAccessToken();
+          } else {
+            console.error("Error restoring Google access token:");
           }
         }
       } catch (error) {
@@ -252,7 +318,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const tokens = await refreshResponse.json();
         const newAccessToken = tokens.accessToken;
         const newRefreshToken = tokens.refreshToken;
-        const newGoogleAccessToken = tokens.googleAccessToken;
+        // const newGoogleAccessToken = tokens.googleAccessToken;
 
         console.log(
           "Received new access token:",
@@ -265,18 +331,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (newAccessToken) setAccessToken(newAccessToken);
         if (newRefreshToken) setRefreshToken(newRefreshToken);
-        if (newGoogleAccessToken) setGoogleAccessToken(newGoogleAccessToken);
+        // if (newGoogleAccessToken) setGoogleAccessToken(newGoogleAccessToken);
 
         // Save tokens to cache
         if (newAccessToken)
           await tokenCache?.saveToken("accessToken", newAccessToken);
         if (newRefreshToken)
           await tokenCache?.saveToken("refreshToken", newRefreshToken);
-        if (newGoogleAccessToken)
-          await tokenCache?.saveToken(
-            "googleAccessToken",
-            newGoogleAccessToken
-          );
+        // if (newGoogleAccessToken)
+        //   await tokenCache?.saveToken(
+        //     "googleAccessToken",
+        //     newGoogleAccessToken
+        //   );
 
         // Update user data from the new access token
         if (newAccessToken) {
@@ -309,17 +375,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       refreshInProgressRef.current = false;
     }
+  }
+
+  const isGoogleAccessTokenValid = () => {
+    const bufferMs = 60 * 1000; // refresh 1 min before expiry
+    return (
+      !!googleAccessToken &&
+      !!googleAccessTokenExpiresAt &&
+      Date.now() < googleAccessTokenExpiresAt - bufferMs
+    );
+  };
+
+  const ensureGoogleAccessToken = async () => {
+    if (isGoogleAccessTokenValid()) {
+      return googleAccessToken;
+    }
+
+    return await refreshGoogleAccessToken();
   };
 
   const handleNativeTokens = async (tokens: {
     accessToken: string;
     refreshToken: string;
     googleAccessToken: string;
+    googleAccessTokenExpiry: number;
+    googleRefreshToken: string;
   }) => {
     const {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
       googleAccessToken: newGoogleAccessToken,
+      googleAccessTokenExpiry: newGoogleAccessTokenExpiry,
+      googleRefreshToken: newGoogleRefreshToken,
     } = tokens;
 
     console.log("Inital access token:", newAccessToken);
@@ -328,10 +415,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     console.log("Initial google access token:", newGoogleAccessToken);
 
+    console.log("Initial google refresh token:", newGoogleRefreshToken);
+
     // Store tokens in state
     if (newAccessToken) setAccessToken(newAccessToken);
     if (newRefreshToken) setRefreshToken(newRefreshToken);
     if (newGoogleAccessToken) setGoogleAccessToken(newGoogleAccessToken);
+    if (newGoogleRefreshToken) setGoogleRefreshToken(newGoogleRefreshToken);
 
     // Save tokens to secure storage for persistence
     if (newAccessToken)
@@ -340,6 +430,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await tokenCache?.saveToken("refreshToken", newRefreshToken);
     if (newGoogleAccessToken) {
       await tokenCache?.saveToken("googleAccessToken", newGoogleAccessToken);
+    }
+    if (newGoogleAccessTokenExpiry) {
+      const expiresAt = Date.now() + newGoogleAccessTokenExpiry * 1000;
+      setGoogleAccessTokenExpiresAt(expiresAt);
+      await tokenCache?.saveToken(
+        "googleAccessTokenExpiresAt",
+        String(expiresAt)
+      );
+    }
+    if (newGoogleRefreshToken) {
+      await tokenCache?.saveToken("googleRefreshToken", newGoogleRefreshToken);
     }
 
     // Decode the JWT access token to get user information
@@ -514,10 +615,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("Error during web logout:", error);
       }
     } else {
-      // For native: Clear both tokens from cache
+      // For native: Clear all tokens from cache
       await tokenCache?.deleteToken("accessToken");
       await tokenCache?.deleteToken("refreshToken");
       await tokenCache?.deleteToken("googleAccessToken");
+      await tokenCache?.deleteToken("googleRefreshToken");
     }
 
     // Clear state
@@ -536,7 +638,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         error,
         fetchWithAuth,
-        googleAccessToken,
+        ensureGoogleAccessToken,
       }}
     >
       {children}
