@@ -30,8 +30,8 @@ export const SettingsScreen = () => {
     signIn,
     signOut,
     isLoading,
-    paylahEmailData,
-    listPaylahEmails,
+    emailData,
+    listEmails,
     isSyncing,
     syncError,
   } = useGmail();
@@ -86,7 +86,7 @@ export const SettingsScreen = () => {
   );
 
   const renderSyncPreview = () => {
-    if (!paylahEmailData) {
+    if (!emailData) {
       return (
         <View style={styles.emptyPreview}>
           <Feather name="info" size={16} color="#9ca3af" />
@@ -97,17 +97,17 @@ export const SettingsScreen = () => {
       );
     }
 
-    // Assuming paylahEmailData contains: merchant, amount, date, currency
+    // Assuming emailData contains: merchant, amount, date, currency
     return (
       <View style={styles.syncCard}>
         <View style={styles.syncCardRow}>
           <View>
             <Text style={styles.syncMerchant}>
-              {paylahEmailData.merchant || "Unknown Merchant"}
+              {emailData.merchant || "Unknown Merchant"}
             </Text>
             <Text style={styles.syncDate}>
-              {paylahEmailData.date
-                ? new Date(paylahEmailData.date).toLocaleDateString(undefined, {
+              {emailData.date
+                ? new Date(emailData.date).toLocaleDateString(undefined, {
                     day: "numeric",
                     month: "short",
                     hour: "2-digit",
@@ -119,7 +119,7 @@ export const SettingsScreen = () => {
           </View>
           <View style={styles.syncAmountContainer}>
             <Text style={styles.syncAmount}>
-              {paylahEmailData.currency} {paylahEmailData.amount?.toFixed(2)}
+              {emailData.currency} {emailData.amount?.toFixed(2)}
             </Text>
             <View style={styles.statusBadge}>
               <Text style={styles.statusText}>Success</Text>
@@ -216,7 +216,7 @@ export const SettingsScreen = () => {
 
           <TouchableOpacity
             style={[styles.button, { marginTop: 15 }]}
-            onPress={listPaylahEmails}
+            onPress={listEmails}
             disabled={isSyncing || !user}
           >
             {isSyncing ? (

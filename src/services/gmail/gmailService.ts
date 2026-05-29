@@ -18,7 +18,7 @@ import {
   NewTransaction,
 } from "../../../db/schema";
 
-type ParsedTransaction = Omit<
+type ParsedNewTransaction = Omit<
   NewTransaction,
   "baseCurrency" | "baseAmount" | "fxRate" | "fxDate"
 >;
@@ -101,7 +101,7 @@ const parseEmail = async (
     // Determine category based on the extracted merchant name
     const category = categorizationService.categorizeMerchant(merchantName);
 
-    const parsedTransaction: ParsedTransaction = {
+    const parsedTransaction: ParsedNewTransaction = {
       emailId: messageId,
       providerId: provider.id,
       merchant: extractedData?.merchant ?? "Unknown",

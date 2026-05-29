@@ -1,18 +1,16 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "../context/auth";
 import { syncAllTransactions } from "../services/gmail/gmailService";
-import { Transaction } from "../../db/schema";
+import type { ParsedTransaction } from "../types/transaction";
 
 export const useGmail = () => {
   const { user, isLoading, googleAccessToken, signIn, signOut } = useAuth();
 
-  const [paylahEmailData, setPaylahEmailData] = useState<Transaction | null>(
-    null
-  );
+  const [emailData, setEmailData] = useState<ParsedTransaction | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
-  const listPaylahEmails = useCallback(async () => {
+  const listEmails = useCallback(async () => {
     if (!googleAccessToken) {
       setSyncError("Not connected to Gmail.");
       return;
@@ -32,7 +30,7 @@ export const useGmail = () => {
       if (transactions.length > 0) {
         // Display the most recent transaction for the 'Run Test' result
         const tx = transactions[0];
-        setPaylahEmailData({
+        setEmailData({
           date: tx.date,
           id: tx.id ?? 0,
           emailId: tx.emailId,
@@ -47,7 +45,7 @@ export const useGmail = () => {
           createdAt: tx.createdAt ?? null,
         });
       } else {
-        setPaylahEmailData(null);
+        setEmailData(null);
       }
 
       console.log("Total Transactions Synced:", transactions.length);
@@ -69,8 +67,8 @@ export const useGmail = () => {
     isLoading: isLoading || isSyncing,
 
     // Sync State
-    paylahEmailData,
-    listPaylahEmails,
+    emailData,
+    listEmails,
     isSyncing,
     syncError,
   };
