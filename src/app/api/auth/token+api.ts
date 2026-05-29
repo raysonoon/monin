@@ -40,6 +40,7 @@ export async function POST(request: Request) {
 
   const data = await response.json();
   console.log("Token data", data);
+  console.log("Google refresh token:", data.refresh_token);
   if (!data.id_token) {
     return Response.json({ error: "Missing ID token" }, { status: 400 });
   }
@@ -138,5 +139,6 @@ export async function POST(request: Request) {
     accessToken,
     refreshToken,
     googleAccessToken: data.access_token,
+    googleRefreshToken: data.refresh_token,
   });
 }

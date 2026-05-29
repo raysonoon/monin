@@ -53,8 +53,11 @@ export async function GET(request: Request) {
     response_type: "code",
     scope: url.searchParams.get("scope") || "identity",
     state: state,
-    prompt: "select_account",
+    access_type: "offline",
+    prompt: "consent",
   });
+
+  console.log("Google auth URL", GOOGLE_AUTH_URL + "?" + params.toString());
 
   return Response.redirect(GOOGLE_AUTH_URL + "?" + params.toString());
 }
