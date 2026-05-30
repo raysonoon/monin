@@ -83,7 +83,7 @@ export const SettingsScreen = () => {
 
   const { data: providers } = useLiveQuery(
     db.select().from(providersSchema), // providersSchema refers to table definition, while categories is actual data from DB
-    [],
+    []
   );
 
   const renderSyncPreview = () => {
@@ -137,7 +137,7 @@ export const SettingsScreen = () => {
 
   const { data: categories } = useLiveQuery(
     db.select().from(categoriesSchema), // categoriesSchema refers to table definition, while categories is actual data from DB
-    [],
+    []
   );
 
   useEffect(() => {
@@ -146,13 +146,13 @@ export const SettingsScreen = () => {
 
   const { data: categorizationRules } = useLiveQuery(
     db.select().from(catRulesSchema), // catRulesSchema refers to table definition for categorization rules
-    [],
+    []
   );
 
   useEffect(() => {
     console.log(
       "Categorization rules updated in UI:",
-      categorizationRules?.length,
+      categorizationRules?.length
     );
   }, [categorizationRules]);
 
@@ -341,7 +341,7 @@ export const SettingsScreen = () => {
         </View>
         {categorizationRules.map((merchant) => {
           const category = categories.find(
-            (cat) => cat.id === merchant.categoryId,
+            (cat) => cat.id === merchant.categoryId
           );
           return (
             <View key={merchant.keyword} style={styles.categoryBox}>
