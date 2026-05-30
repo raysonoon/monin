@@ -21,9 +21,9 @@ export const useGmail = () => {
     if (!user) {
       setEmailData(null);
       setIsSyncing(false);
-      setSyncError(authStatusMessage ?? null);
+      setSyncError(null);
     }
-  }, [user, authStatusMessage]);
+  }, [user]);
 
   const listEmails = useCallback(async () => {
     setIsSyncing(true);

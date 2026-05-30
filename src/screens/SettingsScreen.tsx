@@ -175,16 +175,16 @@ export const SettingsScreen = () => {
         <Text>{user ? `${user.email} connected` : "No email connected"}</Text>
         {!user && authStatusMessage ? (
           <View style={styles.sessionBanner}>
-            {" "}
-            <Feather name="alert-circle" size={14} color="#92400e" />{" "}
-            <Text style={styles.sessionBannerText}>
-              {authStatusMessage}
-            </Text>{" "}
+            <Feather name="alert-circle" size={14} color="#92400e" />
+            <Text style={styles.sessionBannerText}>{authStatusMessage}</Text>
           </View>
         ) : null}
         {user ? (
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: "#dc2626" }]}
+            style={[
+              styles.button,
+              { backgroundColor: "#dc2626", marginTop: 15 },
+            ]}
             onPress={() => {
               console.log("Signing out from gmail");
               signOut();
@@ -199,7 +199,7 @@ export const SettingsScreen = () => {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, { marginTop: 15 }]}
             onPress={() => {
               console.log("Signing in to gmail");
               signIn();
@@ -218,9 +218,13 @@ export const SettingsScreen = () => {
       {/* Last Synced Transaction */}
       <View style={styles.section}>
         <Text style={styles.title}>Last Synced Transaction</Text>
-        {syncError && <Text style={{ color: "red" }}>Error: {syncError}</Text>}
+        {syncError ? (
+          <View style={styles.sessionBanner}>
+            <Feather name="alert-circle" size={14} color="#92400e" />
+            <Text style={styles.sessionBannerText}>{authStatusMessage}</Text>
+          </View>
+        ) : null}
         <View style={styles.section}>
-          {/* The new friendly UI */}
           {renderSyncPreview()}
 
           <TouchableOpacity
@@ -232,7 +236,7 @@ export const SettingsScreen = () => {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>
-                {user ? "Run Full Sync Test" : "Connect Gmail to Run Test"}
+                {user ? "Sync Emails" : "Connect Gmail to Sync"}
               </Text>
             )}
           </TouchableOpacity>
