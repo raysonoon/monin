@@ -117,5 +117,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 20,
+    marginTop: 16,
   },
 });
