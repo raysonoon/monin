@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, real, integer } from "drizzle-orm/sqlite-core";
-import { TransactionType } from "../src/types/transaction";
 
 // Providers Table (Customizable providers for transaction parsing)
 export const providers = sqliteTable("providers", {
@@ -9,6 +8,9 @@ export const providers = sqliteTable("providers", {
   description: text("description"),
   icon: text("icon").notNull().default("📧"), // Default icon for providers
   config: text("config").notNull(), // stores defaultConfig
+  type: text("type", { enum: ["income", "expense"] })
+    .notNull()
+    .default("expense"),
 });
 
 // Categories Table (e.g., Food, Transport)
@@ -69,8 +71,9 @@ export const transactions = sqliteTable("transactions", {
   // Categorization
   category: text("category").notNull(),
   source: text("source").notNull(),
-
-  type: text("type").$type<TransactionType>().notNull(),
+  type: text("type", { enum: ["income", "expense"] })
+    .notNull()
+    .default("expense"),
   notes: text("notes"),
 
   // Metadata

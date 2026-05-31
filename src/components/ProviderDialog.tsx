@@ -31,7 +31,11 @@ interface ProviderDialogProps {
   providerToEdit?: Provider | null; // If null, we are in "Add" mode
 }
 
-const TYPE_OPTIONS = [
+const TYPE_OPTIONS: {
+  key: Provider["type"];
+  label: string;
+  icon: string;
+}[] = [
   { key: "expense", label: "Expense", icon: "💸" },
   { key: "income", label: "Income", icon: "💰" },
 ];
@@ -46,18 +50,22 @@ export default function ProviderDialog({
   const [description, setDescription] = useState<string | null>("");
   const [subject, setSubject] = useState("");
   const [address, setAddress] = useState("");
-  const [selectedType, setSelectedType] = useState("");
+  const [selectedType, setSelectedType] = useState<Provider["type"]>("expense");
 
   // Validation & extraction state
   const [emailBody, setEmailBody] = useState("");
   const [transactionBlock, setTransactionBlock] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractionState | null>(
-    null,
+    null
   );
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controls visibility of the list
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectedTypeOption = TYPE_OPTIONS.find(
+    (option) => option.key === selectedType
+  );
 
   // Reset or Populate form when dialog opens
   useEffect(() => {
@@ -73,7 +81,7 @@ export default function ProviderDialog({
         setAddress(config.address);
         setEmailBody(config.sampleEmail);
         setTransactionBlock(config.sampleTransaction);
-        setSelectedType(""); // Not dynamic yet
+        setSelectedType(providerToEdit.type);
 
         // Populate readonly fields
         setExtractedData({
@@ -92,7 +100,7 @@ export default function ProviderDialog({
         setAddress("");
         setEmailBody("");
         setTransactionBlock("");
-        setSelectedType("");
+        setSelectedType("expense");
         setExtractedData(null);
       }
     }
@@ -152,7 +160,7 @@ export default function ProviderDialog({
     if (!name.trim() || !subject.trim() || !address.trim()) {
       Alert.alert(
         "Missing Fields",
-        "Please fill in the name, subject, and email address.",
+        "Please fill in the name, subject, and email address."
       );
       return;
     }
@@ -164,7 +172,7 @@ export default function ProviderDialog({
     ) {
       Alert.alert(
         "Invalid Extraction",
-        "We couldn't generate a valid regex from your transaction block.",
+        "We couldn't generate a valid regex from your transaction block."
       );
       return;
     }
@@ -177,7 +185,7 @@ export default function ProviderDialog({
       // Generate location logic
       const { bodyStartMarker, bodyEndMarker } = generateSlicingMarkers(
         emailBody,
-        transactionBlock,
+        transactionBlock
       );
       // Generate config object (to string into JSON)
       const providerConfig = {
@@ -205,8 +213,9 @@ export default function ProviderDialog({
           .set({
             name: name.trim(),
             description: description?.trim(),
+            icon: selectedType === "expense" ? "💸" : "💰",
+            type: selectedType,
             config: JSON.stringify(providerConfig),
-            // update icon or type if necessary
           })
           .where(eq(providers.id, providerToEdit.id));
 
@@ -227,7 +236,7 @@ export default function ProviderDialog({
       console.error(error);
       Alert.alert(
         "Error",
-        "Failed to save payment provider. Name might be a duplicate.",
+        "Failed to save payment provider. Name might be a duplicate."
       );
     } finally {
       setIsSubmitting(false);
@@ -259,7 +268,7 @@ export default function ProviderDialog({
             }
           },
         },
-      ],
+      ]
     );
   };
 
@@ -309,6 +318,82 @@ export default function ProviderDialog({
                       value={description ?? ""}
                       onChangeText={setDescription}
                     />
+
+                    {/* --- TYPE DROPDOWN --- */}
+                    <Text style={styles.label}>Type</Text>
+
+                    {/* 1. The Trigger Button (Shows selection or placeholder) */}
+                    <TouchableOpacity
+                      style={[
+                        styles.dropdownTrigger,
+                        // Add red border if user tries to submit without selecting? (Optional)
+                      ]}
+                      onPress={() => setIsDropdownOpen(!isDropdownOpen)}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        {selectedTypeOption ? (
+                          <>
+                            <Text style={{ fontSize: 14 }}>
+                              {selectedTypeOption.icon}
+                            </Text>
+                            <Text style={styles.triggerText}>
+                              {selectedTypeOption.label}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={styles.placeholderText}>
+                            Select a type...
+                          </Text>
+                        )}
+                      </View>
+                      <Feather
+                        name={isDropdownOpen ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="#6b7280"
+                      />
+                    </TouchableOpacity>
+
+                    {/* 2. The List (Only renders when open) */}
+                    {isDropdownOpen && (
+                      <View style={styles.dropdownListContainer}>
+                        <ScrollView
+                          style={{ maxHeight: 150 }}
+                          nestedScrollEnabled
+                        >
+                          {TYPE_OPTIONS.map((option) => (
+                            <TouchableOpacity
+                              key={option.key}
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                setSelectedType(option.key);
+                                setIsDropdownOpen(false);
+                              }}
+                            >
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 10,
+                                }}
+                              >
+                                <Text style={{ fontSize: 16 }}>
+                                  {option.icon}
+                                </Text>
+                                <Text style={styles.itemText}>
+                                  {option.label}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
 
                     {/* Email Subject */}
                     <Text style={styles.label}>Email subject</Text>
@@ -375,88 +460,6 @@ export default function ProviderDialog({
                         value={extractedData?.amount ?? ""}
                       />
                     </View>
-
-                    {/* --- TYPE DROPDOWN --- */}
-                    <Text style={styles.label}>Type (TBC)</Text>
-
-                    {/* 1. The Trigger Button (Shows selection or placeholder) */}
-                    <TouchableOpacity
-                      style={[
-                        styles.dropdownTrigger,
-                        // Add red border if user tries to submit without selecting? (Optional)
-                      ]}
-                      onPress={() => setIsDropdownOpen(!isDropdownOpen)}
-                    >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          alignItems: "center",
-                          gap: 10,
-                        }}
-                      >
-                        {selectedType ? (
-                          <>
-                            <Text style={{ fontSize: 18 }}>
-                              {
-                                TYPE_OPTIONS.find((t) => t.key === selectedType)
-                                  ?.icon
-                              }
-                            </Text>
-                            <Text style={styles.triggerText}>
-                              {
-                                TYPE_OPTIONS.find((t) => t.key === selectedType)
-                                  ?.label
-                              }
-                            </Text>
-                          </>
-                        ) : (
-                          <Text style={styles.placeholderText}>
-                            Select a type...
-                          </Text>
-                        )}
-                      </View>
-                      <Feather
-                        name={isDropdownOpen ? "chevron-up" : "chevron-down"}
-                        size={20}
-                        color="#6b7280"
-                      />
-                    </TouchableOpacity>
-
-                    {/* 2. The List (Only renders when open) */}
-                    {isDropdownOpen && (
-                      <View style={styles.dropdownListContainer}>
-                        <ScrollView
-                          style={{ maxHeight: 150 }}
-                          nestedScrollEnabled
-                        >
-                          {TYPE_OPTIONS.map((type) => (
-                            <TouchableOpacity
-                              key={type.key}
-                              style={styles.dropdownItem}
-                              onPress={() => {
-                                setSelectedType(type.key);
-                                setIsDropdownOpen(false);
-                              }}
-                            >
-                              <View
-                                style={{
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  gap: 10,
-                                }}
-                              >
-                                <Text style={{ fontSize: 16 }}>
-                                  {type.icon}
-                                </Text>
-                                <Text style={styles.itemText}>
-                                  {type.label}
-                                </Text>
-                              </View>
-                            </TouchableOpacity>
-                          ))}
-                        </ScrollView>
-                      </View>
-                    )}
 
                     {/* Action Buttons */}
                     <View style={styles.footer}>
@@ -575,18 +578,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#f3f4f6", // Light gray background
     borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    padding: 12,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: "#e5e7eb",
   },
   triggerText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#1f2937",
     fontWeight: "500",
   },
   placeholderText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#9ca3af", // Gray placeholder color
   },
   dropdownListContainer: {
@@ -606,7 +609,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f3f4f6",
   },
   itemText: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#374151",
   },
   dot: {

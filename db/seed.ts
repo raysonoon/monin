@@ -73,6 +73,7 @@ export const seedDatabase = async () => {
           name: template.name,
           description: template.description,
           icon: template.icon,
+          type: template.type as "income" | "expense",
           config: JSON.stringify(template.defaultConfig),
         }))
       )

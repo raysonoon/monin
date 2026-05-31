@@ -4,6 +4,7 @@ import journal from "./meta/_journal.json";
 import m0000 from "./0000_sleepy_bloodaxe.sql";
 import m0001 from "./0001_nappy_talos.sql";
 import m0002 from "./0002_bumpy_zaran.sql";
+import m0003 from "./0003_harsh_the_order.sql";
 
 export default {
   journal,
@@ -11,5 +12,6 @@ export default {
     m0000,
     m0001,
     m0002,
+    m0003,
   },
 };
