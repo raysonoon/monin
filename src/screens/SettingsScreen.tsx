@@ -184,6 +184,7 @@ export const SettingsScreen = () => {
             style={[
               styles.button,
               { backgroundColor: "#dc2626", marginTop: 15 },
+              isLoading && styles.buttonDisabled,
             ]}
             onPress={() => {
               console.log("Signing out from gmail");
@@ -199,7 +200,11 @@ export const SettingsScreen = () => {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[styles.button, { marginTop: 15 }]}
+            style={[
+              styles.button,
+              { marginTop: 15 },
+              isLoading && styles.buttonDisabled,
+            ]}
             onPress={() => {
               console.log("Signing in to gmail");
               signIn();
@@ -221,14 +226,18 @@ export const SettingsScreen = () => {
         {syncError ? (
           <View style={styles.sessionBanner}>
             <Feather name="alert-circle" size={14} color="#92400e" />
-            <Text style={styles.sessionBannerText}>{authStatusMessage}</Text>
+            <Text style={styles.sessionBannerText}>{syncError}</Text>
           </View>
         ) : null}
         <View style={styles.section}>
           {renderSyncPreview()}
 
           <TouchableOpacity
-            style={[styles.button, { marginTop: 15 }]}
+            style={[
+              styles.button,
+              { marginTop: 15 },
+              (isSyncing || !user) && styles.buttonDisabled,
+            ]}
             onPress={listEmails}
             disabled={isSyncing || !user}
           >
@@ -539,6 +548,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     borderRadius: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   buttonText: {
     color: "white",
