@@ -110,7 +110,7 @@ const parseEmail = async (
       date,
       category: category,
       source: provider.name,
-      type: "expense",
+      type: provider.type,
     };
 
     const { baseAmount, fxRate, fxDate } = await convertToSGD(
@@ -220,8 +220,21 @@ const getBody = (payload: GmailPayload | GmailPart): string | undefined => {
 // Decode Base64URL rawBody
 const decodeBase64 = (body: string | undefined): string => {
   if (!body) return "";
-  // Regex to convert Base64URL --> Base64 then ASCII --> binary
-  return atob(body.replace(/-/g, "+").replace(/_/g, "/"));
+
+  // Sanitize Base64URL to standard Base64
+  const base64 = body.replace(/-/g, "+").replace(/_/g, "/");
+
+  // Decode to binary string
+  const binaryString = atob(base64);
+
+  // Convert to Uint8Array
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // Decode bytes to a proper UTF-8 string
+  return new TextDecoder("utf-8").decode(bytes);
 };
 
 // Converts text/html to text/plain
