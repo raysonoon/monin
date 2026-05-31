@@ -24,7 +24,6 @@ export const parseEmailWithProvider = (
   provider: Provider
 ) => {
   let textToScan = emailBody;
-  console.log("text to scan after normalizing", textToScan);
 
   if (!provider.config) return;
 
@@ -37,8 +36,6 @@ export const parseEmailWithProvider = (
   if (start !== -1 && end !== -1 && end > start) {
     textToScan = emailBody.slice(start, end);
   }
-
-  console.log("text to scan after slicing", textToScan);
 
   // Extract data using stored Regex
   const rawMerchant = extract(
