@@ -88,6 +88,7 @@ export default function ProviderDialog({
           merchant: config.sampleMerchant,
           amount: config.sampleAmount,
           currency: config.sampleCurrency,
+          date: config.sampleDate,
           merchantRegex: config.merchantRegex,
           amountRegex: config.amountRegex,
           hints: {},
@@ -197,13 +198,18 @@ export default function ProviderDialog({
         sampleMerchant: extractedData.merchant,
         sampleAmount: extractedData.amount,
         sampleCurrency: extractedData.currency,
+        sampleDate: extractedData.date,
         bodyStartMarker,
         bodyEndMarker,
         merchantRegex: extractedData.merchantRegex,
+        merchantGroupIndex: extractedData.merchantGroupIndex,
         amountRegex: extractedData.amountRegex,
-        merchantGroupIndex: 1,
-        currencyGroupIndex: 1, // Group 1 in amountRegex captures currency
-        amountGroupIndex: 2,
+        currencyGroupIndex: extractedData.currencyGroupIndex,
+        amountGroupIndex: extractedData.amountGroupIndex,
+        dateRegex: extractedData.dateRegex,
+        dateGroupIndex: extractedData.dateGroupIndex,
+        timeGroupIndex: extractedData.timeGroupIndex,
+        timezoneGroupIndex: extractedData.timezoneGroupIndex,
       };
 
       if (providerToEdit) {
@@ -458,6 +464,10 @@ export default function ProviderDialog({
                       <ReadOnlyField
                         label="Amount"
                         value={extractedData?.amount ?? ""}
+                      />
+                      <ReadOnlyField
+                        label="Date"
+                        value={extractedData?.date ?? ""}
                       />
                     </View>
 

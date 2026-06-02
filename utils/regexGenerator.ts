@@ -2,11 +2,20 @@ export interface ExtractionState {
   merchant: string;
   amount: string;
   currency: string;
+  date: string;
   merchantRegex: string;
+  merchantGroupIndex?: number;
   amountRegex: string;
+  currencyGroupIndex?: number;
+  amountGroupIndex?: number;
+  dateRegex?: string;
+  dateGroupIndex?: number;
+  timeGroupIndex?: number;
+  timezoneGroupIndex?: number;
   hints: {
     merchant?: string;
     amount?: string;
+    date?: string;
   };
 }
 
@@ -26,8 +35,16 @@ export function generateAutoConfigs(transactionBlock: string): ExtractionState {
     merchant: "",
     amount: "",
     currency: "?",
+    date: "",
     merchantRegex: "",
+    merchantGroupIndex: 1,
     amountRegex: "",
+    currencyGroupIndex: 1,
+    amountGroupIndex: 2,
+    dateRegex: "",
+    dateGroupIndex: 1,
+    timeGroupIndex: 2,
+    timezoneGroupIndex: 3,
     hints: {},
   };
 
@@ -71,11 +88,31 @@ export function generateAutoConfigs(transactionBlock: string): ExtractionState {
     result.amountRegex = `${escapeRegExp(anchorPart).replace(/\s+/g, "\\s+")}(S\\$|[A-Z]{3}|\\$)?\\s*([\\d,.]+)`;
   }
 
+  // --- 3. DATE HEURISTIC ---
+  const datePattern =
+    /(\d{1,2}[ \t]+[A-Za-z]{3}(?:[ \t]+\d{4})?)[ \t]+(\d{1,2}:\d{2})(?:[ \t]+\(?([A-Z]{2,5}|UTC[+-]\d{1,2}(?::?\d{2})?|[+-]\d{2}:?\d{2})\)?)?/i;
+  const dateLine = lines.find((line) => datePattern.test(line));
+
+  if (dateLine) {
+    const dateMatch = dateLine.match(datePattern);
+
+    if (dateMatch) {
+      result.dateRegex =
+        "(\\d{1,2}[ \\t]+[A-Za-z]{3}(?:[ \\t]+\\d{4})?)[ \\t]+(\\d{1,2}:\\d{2})(?:[ \\t]+\\(?([A-Z]{2,5}|UTC[+-]\\d{1,2}(?::?\\d{2})?|[+-]\\d{2}:?\\d{2})\\)?)?";
+      result.dateGroupIndex = 1;
+      result.timeGroupIndex = 2;
+      result.timezoneGroupIndex = 3;
+      result.date = dateMatch[1] + " " + dateMatch[2] + " " + dateMatch[3];
+    }
+  }
+
   // --- HINTS ---
   if (!result.merchant)
     result.hints.merchant = "Ensure the merchant name is the first line.";
   if (!result.amount)
     result.hints.amount = "Include the line showing the total amount";
+  if (!result.date)
+    result.hints.date = "Include a line with date, time and optional timezone";
 
   return result;
 }
