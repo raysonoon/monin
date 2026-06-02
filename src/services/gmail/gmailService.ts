@@ -80,12 +80,6 @@ const parseEmail = async (
 
     // Parse date from header
     const headers = emailData.payload.headers;
-    const dateHeader = getHeader(headers, "Date");
-    const date = dateHeader
-      ? new Date(dateHeader).toISOString()
-      : new Date().toISOString();
-    console.log("Date extracted from header:", date);
-
     const rawBody = getBody(emailData.payload);
     const decodedBody = decodeBase64(rawBody);
     const plainBody = htmlToPlain(decodedBody);
@@ -93,7 +87,11 @@ const parseEmail = async (
 
     // Use the provider's specific parse logic
     // const extractedData = provider.parse(emailData, normalizedBody);
-    const extractedData = parseEmailWithProvider(normalizedBody, provider);
+    const extractedData = parseEmailWithProvider(
+      normalizedBody,
+      provider,
+      headers
+    );
 
     // Handle null merchants safely by defaulting to "Unknown"
     const merchantName = extractedData?.merchant ?? "Unknown";
@@ -107,7 +105,7 @@ const parseEmail = async (
       merchant: extractedData?.merchant ?? "Unknown",
       amount: extractedData?.amount ? Number(extractedData.amount) : 0,
       currency: extractedData?.currency ?? "?",
-      date,
+      date: extractedData?.date ?? new Date().toISOString(),
       category: category,
       source: provider.name,
       type: provider.type,
@@ -127,7 +125,6 @@ const parseEmail = async (
       fxDate,
     };
 
-    console.log("Parsed Transaction after fx:", parsedTransactionWithBase);
     return parsedTransactionWithBase;
   } catch (err) {
     console.error(`Failed to parse email ${messageId}:`, err);
@@ -184,8 +181,6 @@ export const syncAllTransactions = async (
 };
 
 // --- Helper functions ---
-const getHeader = (headers: GmailHeader[], name: string) =>
-  headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value;
 
 // Get body from email payload recursively
 const getBody = (payload: GmailPayload | GmailPart): string | undefined => {

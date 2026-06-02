@@ -1,4 +1,37 @@
 import { Provider } from "../db/schema";
+import type { GmailHeader } from "../src/types/gmail";
+
+type ResolveDateInput = {
+  rawDate: string | null;
+  rawTime: string | null;
+  rawTimezone: string | null;
+  headerDate?: string;
+};
+
+const MONTHS: Record<string, number> = {
+  JAN: 0,
+  FEB: 1,
+  MAR: 2,
+  APR: 3,
+  MAY: 4,
+  JUN: 5,
+  JUL: 6,
+  AUG: 7,
+  SEP: 8,
+  OCT: 9,
+  NOV: 10,
+  DEC: 11,
+};
+
+const TIMEZONE_OFFSETS: Record<string, number> = {
+  UTC: 0,
+  GMT: 0,
+  SGT: 8 * 60,
+  SST: 8 * 60,
+  HKT: 8 * 60,
+  MYT: 8 * 60,
+  PHT: 8 * 60,
+};
 
 // Helper to run regex safely
 const extract = (
@@ -21,11 +54,12 @@ const extract = (
 
 export const parseEmailWithProvider = (
   emailBody: string,
-  provider: Provider
+  provider: Provider,
+  headers: GmailHeader[]
 ) => {
-  let textToScan = emailBody;
-
   if (!provider.config) return;
+
+  let textToScan = emailBody;
 
   // Slice the Body (if markers exist)
   // This isolates the receipt area, reducing false positives from footers/headers
@@ -53,18 +87,37 @@ export const parseEmailWithProvider = (
     config.amountRegex,
     config.amountGroupIndex
   );
+  const rawDate = extract(textToScan, config.dateRegex, config.dateGroupIndex);
+  const rawTime = extract(textToScan, config.dateRegex, config.timeGroupIndex);
+  const rawTimezone = extract(
+    textToScan,
+    config.dateRegex,
+    config.timezoneGroupIndex
+  );
 
-  // Post-processing (Cleaning up currency & numbers)
+  const headerDate = headers.find(
+    (h) => h.name.toLowerCase() === "date"
+  )?.value;
+
+  // Post-processing (Cleaning up currency, numbers & date)
   const currency = normalizeCurrencyCode(rawCurrency);
 
   const amount = rawAmount
     ? parseFloat(rawAmount.replace(/,/g, "")).toFixed(2)
     : null;
 
+  const date = resolveDate({
+    rawDate,
+    rawTime,
+    rawTimezone,
+    headerDate,
+  });
+
   return {
     merchant: rawMerchant || "Unknown",
     currency: currency,
     amount: amount,
+    date: date,
   };
 };
 
@@ -83,4 +136,77 @@ const normalizeCurrencyCode = (rawSymbol: string | null): string => {
   if (!rawSymbol) return "?"; // Default fallback
   const upperSymbol = rawSymbol.trim().toUpperCase();
   return CURRENCY_MAP[upperSymbol] || upperSymbol;
+};
+
+const parseTimezoneToMinutes = (timezone: string | null): number | null => {
+  if (!timezone) return null;
+
+  const normalized = timezone.trim().toUpperCase();
+
+  if (normalized in TIMEZONE_OFFSETS) {
+    return TIMEZONE_OFFSETS[normalized];
+  }
+
+  const utcMatch = normalized.match(/^UTC([+-])(\d{1,2})(?::?(\d{2}))?$/);
+  if (utcMatch) {
+    const sign = utcMatch[1] === "+" ? 1 : -1;
+    const hours = Number(utcMatch[2]);
+    const minutes = Number(utcMatch[3] ?? "0");
+    return sign * (hours * 60 + minutes);
+  }
+
+  const compactMatch = normalized.match(/^([+-])(\d{2})(\d{2})$/);
+  if (compactMatch) {
+    const sign = compactMatch[1] === "+" ? 1 : -1;
+    const hours = Number(compactMatch[2]);
+    const minutes = Number(compactMatch[3]);
+    return sign * (hours * 60 + minutes);
+  }
+
+  const colonMatch = normalized.match(/^([+-])(\d{2}):(\d{2})$/);
+  if (colonMatch) {
+    const sign = colonMatch[1] === "+" ? 1 : -1;
+    const hours = Number(colonMatch[2]);
+    const minutes = Number(colonMatch[3]);
+    return sign * (hours * 60 + minutes);
+  }
+
+  return null;
+};
+
+const resolveDate = ({
+  rawDate,
+  rawTime,
+  rawTimezone,
+  headerDate,
+}: ResolveDateInput): string => {
+  if (rawDate && rawTime) {
+    const dateMatch = rawDate
+      .trim()
+      .match(/^(\d{1,2})\s+([A-Za-z]{3})(?:\s+(\d{4}))?$/);
+    const timeMatch = rawTime.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+    if (dateMatch && timeMatch) {
+      const day = Number(dateMatch[1]);
+      const month = MONTHS[dateMatch[2].toUpperCase()];
+      const year = Number(dateMatch[3] ?? new Date().getFullYear());
+
+      const hour = Number(timeMatch[1]);
+      const minute = Number(timeMatch[2]);
+      const second = Number(timeMatch[3] ?? "0");
+
+      const offsetMinutes = parseTimezoneToMinutes(rawTimezone ?? "SGT") ?? 0; // default to SGT timezone for time without timezone
+      const utcMs =
+        Date.UTC(year, month, day, hour, minute, second) -
+        offsetMinutes * 60_000;
+
+      return new Date(utcMs).toISOString();
+    }
+  }
+
+  if (headerDate) {
+    return new Date(headerDate).toISOString();
+  }
+
+  return new Date().toISOString();
 };
