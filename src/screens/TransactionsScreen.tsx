@@ -13,13 +13,19 @@ import {
   transactions as transactionsSchema,
   Transaction,
   categories as categoriesSchema,
+  wallets as walletsSchema,
 } from "../../db/schema";
+import Feather from "@expo/vector-icons/Feather";
 import { DateType } from "react-native-ui-datepicker";
 import DateDialog from "../components/DateDialog";
 import TransactionDialog from "../components/TransactionDialog";
-import { getCategoryColorMap } from "../services/transaction/transactionHelper";
+import {
+  getCategoryColorMap,
+  getWalletSummary,
+} from "../services/transaction/transactionHelper";
 
 export const TransactionsScreen = () => {
+  const { data: wallets = [] } = useLiveQuery(db.select().from(walletsSchema));
   const { data: transactions = [] } = useLiveQuery(
     db.select().from(transactionsSchema)
   );
@@ -40,6 +46,28 @@ export const TransactionsScreen = () => {
     setIsDialogVisible(false);
     setSelectedTransaction(null);
   };
+
+  // State for wallet dropdown ---
+  const [selectedWallet, setSelectedWallet] = useState("All");
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
+
+  const selectedWalletData =
+    selectedWallet === "All"
+      ? null
+      : (wallets.find((wallet) => String(wallet.id) === selectedWallet) ??
+        null);
+
+  const selectedWalletTransactions =
+    selectedWalletData === null
+      ? transactions
+      : transactions.filter(
+          (transaction) => transaction.walletId === selectedWalletData.id
+        );
+
+  const walletSummary =
+    selectedWalletData === null
+      ? null
+      : getWalletSummary(selectedWalletTransactions, selectedWalletData);
 
   // --- State for Filters ---
   const [search, setSearch] = useState("");
@@ -84,6 +112,8 @@ export const TransactionsScreen = () => {
         const matchesSearch =
           t.merchant.toLowerCase().includes(search.toLowerCase()) ||
           t.category.toLowerCase().includes(search.toLowerCase());
+        const matchesWallet =
+          selectedWallet === "All" || String(t.walletId) === selectedWallet;
         const matchesCat =
           selectedCategory === "All" || t.category === selectedCategory;
         const matchesType = selectedType === "All" || t.type === selectedType;
@@ -92,6 +122,7 @@ export const TransactionsScreen = () => {
         const matchesDate = inRange(t.date, range);
 
         return (
+          matchesWallet &&
           matchesSearch &&
           matchesCat &&
           matchesType &&
@@ -103,6 +134,7 @@ export const TransactionsScreen = () => {
   }, [
     transactions,
     search,
+    selectedWallet,
     selectedCategory,
     selectedType,
     selectedCurrency,
@@ -128,7 +160,14 @@ export const TransactionsScreen = () => {
   // Reset pagination when filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedCategory, selectedType, selectedCurrency, range]);
+  }, [
+    search,
+    selectedCategory,
+    selectedType,
+    selectedCurrency,
+    selectedWallet,
+    range,
+  ]);
 
   return (
     <View>
@@ -152,6 +191,73 @@ export const TransactionsScreen = () => {
             >{`$${totalExpense.toFixed(2)}`}</Text>
             <Text style={styles.cardLabel}>Total Expenses</Text>
           </View>
+        </View>
+
+        {/* Wallet Dropdown Filter */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Wallet</Text>
+
+          <TouchableOpacity
+            style={styles.dropdownTrigger}
+            onPress={() => setIsWalletOpen((open) => !open)}
+          >
+            <Text style={styles.triggerText}>
+              {selectedWallet === "All"
+                ? "All Wallets"
+                : (wallets.find((w) => String(w.id) === selectedWallet)?.name ??
+                  "Wallet")}
+            </Text>
+            <Feather
+              name={isWalletOpen ? "chevron-up" : "chevron-down"}
+              size={16}
+              color="#6b7280"
+            />
+          </TouchableOpacity>
+
+          {isWalletOpen ? (
+            <View style={styles.dropdownListContainer}>
+              <TouchableOpacity
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setSelectedWallet("All");
+                  setIsWalletOpen(false);
+                  setCurrentPage(1);
+                }}
+              >
+                <Text style={styles.itemText}>All Wallets</Text>
+              </TouchableOpacity>
+
+              {wallets.map((wallet) => (
+                <TouchableOpacity
+                  key={wallet.id}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedWallet(String(wallet.id));
+                    setIsWalletOpen(false);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <Text style={styles.itemText}>{wallet.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+          {walletSummary ? (
+            <View style={styles.summaryWallet}>
+              <Text style={styles.summaryText}>
+                Balance: {walletSummary.currency}{" "}
+                {walletSummary.balance.toFixed(2)}
+              </Text>
+              <Text style={styles.summaryText}>
+                Income: {walletSummary.currency}{" "}
+                {walletSummary.income.toFixed(2)}
+              </Text>
+              <Text style={styles.summaryText}>
+                Expense: {walletSummary.currency}{" "}
+                {walletSummary.expense.toFixed(2)}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Date Filter */}
@@ -345,6 +451,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   summaryRow: { flexDirection: "row", gap: 12 },
+  summaryWallet: {
+    marginTop: 8,
+  },
+  summaryText: {
+    fontSize: 14,
+    color: "#374151",
+    marginTop: 4,
+  },
   dateContainer: {
     flex: 1,
     backgroundColor: "#fff",
@@ -370,6 +484,39 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 10,
+  },
+  dropdownTrigger: {
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+    padding: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  triggerText: {
+    fontSize: 14,
+    color: "#1f2937",
+    fontWeight: "500",
+  },
+  dropdownListContainer: {
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    overflow: "hidden",
+    elevation: 3,
+  },
+  dropdownItem: {
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  itemText: {
+    fontSize: 14,
+    color: "#374151",
   },
   dateInput: {
     backgroundColor: "#f3f4f6",
