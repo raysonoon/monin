@@ -1,6 +1,16 @@
 import { db } from "./client";
-import { providers, categories, categorizationRules } from "./schema";
+import { wallets, providers, categories, categorizationRules } from "./schema";
 import { PROVIDER_TEMPLATES } from "../src/services/gmail/templates";
+
+// General wallet
+const DEFAULT_WALLETS = [
+  {
+    name: "General",
+    openingBalance: 0.0,
+    openingBalanceDate: new Date().toISOString(),
+    currency: "SGD",
+  },
+];
 
 // Define your default Categories (Name, Icon, Color)
 const DEFAULT_CATEGORIES = [
@@ -51,6 +61,28 @@ const GLOBAL_RULES_DATA = [
   // Transfers
   { keyword: "Mobile ending", category: "Transfers", matchType: "contains" },
 ];
+
+export let GENERAL_WALLET_ID: number | null = null;
+
+export const getGeneralWalletId = async (): Promise<number> => {
+  if (GENERAL_WALLET_ID) return GENERAL_WALLET_ID; // in-memory cache while app is running
+
+  // Try to find an existing wallet
+  const existing = await db.select().from(wallets).limit(1);
+
+  if (existing.length > 0) {
+    console.log("A wallet exists already");
+    GENERAL_WALLET_ID = existing[0].id;
+    return GENERAL_WALLET_ID;
+  }
+
+  console.log("No wallet found. Creating a general wallet");
+
+  // Create it if missing
+  const inserted = await db.insert(wallets).values(DEFAULT_WALLETS).returning();
+  GENERAL_WALLET_ID = inserted[0].id;
+  return GENERAL_WALLET_ID;
+};
 
 export const seedDatabase = async () => {
   try {

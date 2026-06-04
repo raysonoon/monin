@@ -1,6 +1,23 @@
 import { sql } from "drizzle-orm";
 import { sqliteTable, text, real, integer } from "drizzle-orm/sqlite-core";
 
+// Wallets Table
+export const wallets = sqliteTable("wallets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  icon: text("icon").notNull().default("👝"), // Default icon for wallets
+  type: text("type", { enum: ["cash", "cashless"] })
+    .notNull()
+    .default("cashless"),
+  openingBalance: real("opening_balance").notNull(),
+  openingBalanceDate: text("opening_balance_date").notNull(),
+  currency: text("currency").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(
+    sql`(current_timestamp)`
+  ),
+});
+
 // Providers Table (Customizable providers for transaction parsing)
 export const providers = sqliteTable("providers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -55,6 +72,9 @@ export const transactions = sqliteTable("transactions", {
   providerId: integer("provider_id").references(() => providers.id, {
     onDelete: "cascade",
   }),
+  walletId: integer("wallet_id").references(() => wallets.id, {
+    onDelete: "restrict",
+  }),
 
   // Data extracted
   merchant: text("merchant").notNull(),
@@ -82,6 +102,8 @@ export const transactions = sqliteTable("transactions", {
   ),
 });
 
+export type Wallet = typeof wallets.$inferSelect;
+export type NewWallet = typeof wallets.$inferInsert;
 export type Provider = typeof providers.$inferSelect;
 export type NewProvider = typeof providers.$inferInsert;
 export type Category = typeof categories.$inferSelect;
