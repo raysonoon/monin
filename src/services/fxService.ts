@@ -15,9 +15,17 @@ type FxRatesCache = {
   ratesByDate: Record<string, number>; // { "YYYY-MM-DD": rate }
 };
 
+type ConvertResult = {
+  amount: number;
+  fxRate: number | null;
+  fxDate: string;
+};
+
 const cache = new Map<string, FxRatesCache>();
 
 const toFxDate = (isoDate: string) => isoDate.split("T")[0]; // "2026-05-27T12:34:56.000Z" -> "2026-05-27"
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const buildKey = (base: string, quote: string, from: string, to: string) =>
   `${base}->${quote}:${from}:${to}`;
@@ -90,6 +98,44 @@ export const getRateForDate = async (
   return { rate, fxDate };
 };
 
+export const convertCurrency = async (
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string,
+  dateIso: string,
+  rangeFrom?: string,
+  rangeTo?: string
+): Promise<ConvertResult> => {
+  const fxDate = toFxDate(dateIso);
+
+  if (
+    !fromCurrency ||
+    !toCurrency ||
+    fromCurrency === "?" ||
+    toCurrency === "?"
+  ) {
+    return { amount: 0, fxRate: null, fxDate };
+  }
+
+  if (fromCurrency === toCurrency) {
+    return { amount: round2(amount), fxRate: 1, fxDate };
+  }
+
+  const { rate, fxDate: resolvedFxDate } = await getRateForDate(
+    dateIso,
+    fromCurrency,
+    toCurrency,
+    rangeFrom,
+    rangeTo
+  );
+
+  return {
+    amount: round2(amount * rate),
+    fxRate: rate,
+    fxDate: resolvedFxDate,
+  };
+};
+
 export const convertToSGD = async (
   amount: number,
   currency: string,
@@ -97,25 +143,42 @@ export const convertToSGD = async (
   rangeFrom?: string,
   rangeTo?: string
 ) => {
-  // Skip FX for SGD
-  if (currency === "SGD") {
-    return { baseAmount: round2(amount), fxRate: 1, fxDate: toFxDate(dateIso) };
-  }
-
-  // Set baseAmount 0 and skip FX for unknown currency
-  if (currency === "?") {
-    return { baseAmount: 0, fxRate: null, fxDate: toFxDate(dateIso) };
-  }
-
-  const { rate, fxDate } = await getRateForDate(
-    dateIso,
+  const result = await convertCurrency(
+    amount,
     currency,
     "SGD",
+    dateIso,
     rangeFrom,
     rangeTo
   );
 
-  return { baseAmount: round2(amount * rate), fxRate: rate, fxDate };
+  return {
+    baseAmount: result.amount,
+    fxRate: result.fxRate,
+    fxDate: result.fxDate,
+  };
 };
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
+export const convertToWalletCurrency = async (
+  amount: number,
+  currency: string,
+  walletCurrency: string,
+  dateIso: string,
+  rangeFrom?: string,
+  rangeTo?: string
+) => {
+  const result = await convertCurrency(
+    amount,
+    currency,
+    walletCurrency,
+    dateIso,
+    rangeFrom,
+    rangeTo
+  );
+
+  return {
+    walletAmount: result.amount,
+    fxRate: result.fxRate,
+    fxDate: result.fxDate,
+  };
+};
