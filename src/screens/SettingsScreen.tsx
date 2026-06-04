@@ -745,6 +745,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   categoryName: {
+    flex: 1,
     fontSize: 16,
   },
   merchantContainer: {
