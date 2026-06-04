@@ -4,7 +4,6 @@ import { categorizationService } from "../categorizationService";
 import { convertToSGD } from "../fxService";
 
 import type {
-  GmailHeader,
   GmailPayload,
   GmailPart,
   GmailMessagesList,
@@ -17,6 +16,7 @@ import {
   transactions,
   NewTransaction,
 } from "../../../db/schema";
+import { getGeneralWalletId } from "../../../db/seed";
 
 type ParsedNewTransaction = Omit<
   NewTransaction,
@@ -141,6 +141,8 @@ export const syncAllTransactions = async (
 ): Promise<NewTransaction[]> => {
   await categorizationService.init(); // Initialise rules from DB into memory before loop
 
+  const generalWalletId = await getGeneralWalletId();
+
   const providers = await db.select().from(providersSchema);
 
   // Get a list of all email IDs already in DB
@@ -169,9 +171,10 @@ export const syncAllTransactions = async (
       );
 
       if (transaction) {
-        // 3. Save to DB immediately (or collect and bulk insert)
+        // Save to DB immediately (or collect and bulk insert)
         await db.insert(transactions).values({
           ...transaction,
+          walletId: generalWalletId,
         });
         allTransactions.push(transaction);
       }
