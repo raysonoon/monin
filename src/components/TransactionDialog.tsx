@@ -18,12 +18,14 @@ import {
   transactions,
   Transaction,
   categories as categoriesSchema,
+  wallets as walletsSchema,
 } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import Feather from "@expo/vector-icons/Feather";
 import { parseDDMMYYYYToISO } from "../../utils/dateFormatter";
 import { convertToSGD } from "../services/fxService";
+import { getGeneralWalletId } from "../../db/seed";
 
 interface TransactionDialogProps {
   visible: boolean;
@@ -63,16 +65,22 @@ export default function TransactionDialog({
   ); // DD/MM/YYYY Time
   const [notes, setNotes] = useState("");
 
+  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
+
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
-
   // Visibility states for dropdowns
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: walletList = [] } = useLiveQuery(
+    db.select().from(walletsSchema)
+  );
 
   const { data: categoryList } = useLiveQuery(
     db.select().from(categoriesSchema)
@@ -97,6 +105,7 @@ export default function TransactionDialog({
           (c) => c.name === transactionToEdit.category
         );
 
+        setSelectedWalletId(transactionToEdit.walletId ?? null);
         setSelectedCategoryId(matchingCategory ? matchingCategory.id : null);
 
         setDate(
@@ -119,6 +128,7 @@ export default function TransactionDialog({
         setAmount("");
         setCurrency("SGD");
         setType("expense");
+        setSelectedWalletId(null);
         setSelectedCategoryId(null);
         setDate(
           new Date()
@@ -142,6 +152,7 @@ export default function TransactionDialog({
     setIsTypeOpen(false);
     setIsCategoryOpen(false);
     setIsCurrencyOpen(false);
+    setIsWalletOpen(false);
   };
 
   const handleSave = async () => {
@@ -165,11 +176,14 @@ export default function TransactionDialog({
       isoDate
     );
 
+    const walletId = selectedWalletId ?? (await getGeneralWalletId());
+
     const transactionData = {
       merchant: merchant.trim(),
       amount: parseFloat(amount),
       currency,
       type,
+      walletId,
       category: selectedCategory?.name ?? "Uncategorized",
       date: isoDate,
       notes: notes.trim() || null,
@@ -321,6 +335,49 @@ export default function TransactionDialog({
                       ))}
                     </View>
                   )}
+
+                  {/* Wallet Dropdown */}
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Wallet</Text>
+                    <TouchableOpacity
+                      style={styles.dropdownTrigger}
+                      onPress={() => {
+                        setIsWalletOpen(!isWalletOpen);
+                        setIsTypeOpen(false);
+                        setIsCategoryOpen(false);
+                        setIsCurrencyOpen(false);
+                      }}
+                    >
+                      <View style={styles.triggerContent}>
+                        <Text style={styles.triggerText}>
+                          {walletList.find((w) => w.id === selectedWalletId)
+                            ?.name ?? "General"}
+                        </Text>
+                      </View>
+                      <Feather
+                        name={isWalletOpen ? "chevron-up" : "chevron-down"}
+                        size={18}
+                        color="#6b7280"
+                      />
+                    </TouchableOpacity>
+
+                    {isWalletOpen && (
+                      <View style={styles.dropdownListContainer}>
+                        {walletList.map((wallet) => (
+                          <TouchableOpacity
+                            key={wallet.id}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setSelectedWalletId(wallet.id);
+                              setIsWalletOpen(false);
+                            }}
+                          >
+                            <Text style={styles.itemText}>{wallet.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </View>
 
                   {/* Type Dropdown */}
                   <View style={styles.fieldGroup}>
