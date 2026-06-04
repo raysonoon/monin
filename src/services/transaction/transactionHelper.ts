@@ -1,4 +1,6 @@
-import { Transaction, Category } from "../../../db/schema";
+import { Transaction, Category, Wallet } from "../../../db/schema";
+
+const toDate = (value: string) => new Date(value);
 
 export const getMonthlyCashFlow = (transactions: Transaction[]) => {
   const months = [
@@ -16,7 +18,7 @@ export const getMonthlyCashFlow = (transactions: Transaction[]) => {
     "Dec",
   ];
 
-  // 1. Initialize the map with every month set to 0
+  // Initialize map with every month set to 0
   const map: Record<
     string,
     { month: string; income: number; expense: number }
@@ -25,7 +27,7 @@ export const getMonthlyCashFlow = (transactions: Transaction[]) => {
     map[m] = { month: m, income: 0, expense: 0 };
   });
 
-  // 2. Fill in actual data
+  // Fill in actual data
   transactions.forEach((t) => {
     const date = new Date(t.date);
     const monthName = months[date.getMonth()];
@@ -36,7 +38,7 @@ export const getMonthlyCashFlow = (transactions: Transaction[]) => {
     }
   });
 
-  // 3. Return as a sorted array
+  // Return as a sorted array
   return months.map((m) => map[m]);
 };
 
@@ -69,4 +71,36 @@ export const getCategoryColorMap = (
     },
     {} as Record<string, string>
   );
+};
+
+export const getWalletSummary = (
+  transactions: Transaction[],
+  wallet: Wallet
+) => {
+  const openingDate = toDate(wallet.openingBalanceDate);
+  const walletTransactions = transactions.filter(
+    (t) => toDate(t.date) >= openingDate
+  );
+
+  const income = walletTransactions
+    .filter((t) => t.type === "income")
+    .reduce((sum, t) => {
+      return sum + (t.currency === wallet.currency ? t.amount : t.baseAmount);
+    }, 0);
+
+  const expense = walletTransactions
+    .filter((t) => t.type === "expense")
+    .reduce((sum, t) => {
+      return sum + (t.currency === wallet.currency ? t.amount : t.baseAmount);
+    }, 0);
+
+  const balance = wallet.openingBalance + income - expense;
+
+  return {
+    currency: wallet.currency,
+    openingBalance: wallet.openingBalance,
+    income,
+    expense,
+    balance,
+  };
 };
