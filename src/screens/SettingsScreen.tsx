@@ -5,23 +5,31 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { useState, useEffect } from "react";
 import { useGmail } from "../hooks/useGmail";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import { eq } from "drizzle-orm";
 import { db } from "../../db/client";
 import {
   providers as providersSchema,
   Provider,
   categories as categoriesSchema,
   Category,
+  wallets as walletsSchema,
+  Wallet,
   categorizationRules as catRulesSchema,
   CategorizationRule,
+  transactions as transactionsSchema,
 } from "../../db/schema";
 import ProviderDialog from "../components/ProviderDialog";
 import CategoryDialog from "../components/CategoryDialog";
 import MerchantDialog from "../components/MerchantDialog";
+import WalletDialog from "../components/WalletDialog";
+import { getGeneralWalletId } from "../../db/seed";
+import { getWalletSummary } from "../services/transaction/transactionHelper";
 import Feather from "@expo/vector-icons/Feather";
 
 export const SettingsScreen = () => {
@@ -49,6 +57,11 @@ export const SettingsScreen = () => {
   const [merchantDialogVisible, setMerchantDialogVisible] = useState(false);
   const [editingMerchant, setEditingMerchant] =
     useState<CategorizationRule | null>(null);
+
+  // Wallet dialog state
+  const [walletDialogVisible, setWalletDialogVisible] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
+  const [generalWalletId, setGeneralWalletId] = useState<number | null>(null);
 
   // Handlers
   const handleAddProvider = () => {
@@ -81,8 +94,67 @@ export const SettingsScreen = () => {
     setMerchantDialogVisible(true);
   };
 
+  const handleAddWallet = () => {
+    setEditingWallet(null);
+    setWalletDialogVisible(true);
+  };
+
+  const handleEditWallet = (wallet: Wallet) => {
+    setEditingWallet(wallet);
+    setWalletDialogVisible(true);
+  };
+
+  const handleDeleteWallet = async (wallet: Wallet) => {
+    if (generalWalletId !== null && wallet.id === generalWalletId) {
+      Alert.alert("Not allowed", "You cannot delete the General wallet.");
+      return;
+    }
+
+    const linkedTransactions = await db
+      .select({ id: transactionsSchema.id })
+      .from(transactionsSchema)
+      .where(eq(transactionsSchema.walletId, wallet.id))
+      .limit(1);
+
+    if (linkedTransactions.length > 0) {
+      Alert.alert(
+        "Wallet in use",
+        "Move or delete the linked transactions before deleting this wallet."
+      );
+      return;
+    }
+
+    Alert.alert("Delete Wallet", `Delete ${wallet.name}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await db
+              .delete(walletsSchema)
+              .where(eq(walletsSchema.id, wallet.id));
+          } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "Failed to delete wallet.");
+          }
+        },
+      },
+    ]);
+  };
+
   const { data: providers } = useLiveQuery(
     db.select().from(providersSchema), // providersSchema refers to table definition, while categories is actual data from DB
+    []
+  );
+
+  const { data: wallets = [] } = useLiveQuery(
+    db.select().from(walletsSchema),
+    []
+  );
+
+  const { data: transactions = [] } = useLiveQuery(
+    db.select().from(transactionsSchema),
     []
   );
 
@@ -148,6 +220,14 @@ export const SettingsScreen = () => {
     db.select().from(catRulesSchema), // catRulesSchema refers to table definition for categorization rules
     []
   );
+
+  useEffect(() => {
+    getGeneralWalletId()
+      .then(setGeneralWalletId)
+      .catch((error) => {
+        console.error("Failed to resolve General wallet:", error);
+      });
+  }, []);
 
   useEffect(() => {
     console.log(
@@ -245,12 +325,86 @@ export const SettingsScreen = () => {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>
-                {user ? "Sync Emails" : "Connect Gmail to Sync"}
+                {user ? "Sync All Emails" : "Connect Gmail to Sync"}
               </Text>
             )}
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Wallets */}
+      <View style={styles.section}>
+        <View style={styles.headerRow}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Wallets</Text>
+            <Text style={styles.subtitle}>
+              Manage different wallets with separate balances.
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.button} onPress={handleAddWallet}>
+            <Feather name="plus" size={16} color="white" />
+            <Text style={styles.buttonText}>Add Wallet</Text>
+          </TouchableOpacity>
+        </View>
+
+        {wallets.map((wallet) => {
+          const isDefaultWallet =
+            generalWalletId !== null && wallet.id === generalWalletId;
+
+          const walletTransactions = transactions.filter(
+            (transaction) => transaction.walletId === wallet.id
+          );
+
+          const summary = getWalletSummary(walletTransactions, wallet);
+
+          return (
+            <View key={wallet.id} style={styles.walletBox}>
+              <View style={styles.walletLeft}>
+                <View style={styles.walletText}>
+                  <View style={styles.walletTitleRow}>
+                    <Text style={styles.categoryName}>{wallet.name}</Text>
+                    {isDefaultWallet ? (
+                      <View style={styles.defaultBadge}>
+                        <Text style={styles.defaultBadgeText}>Default</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                  <Text style={styles.walletMeta}>
+                    {wallet.currency} ({wallet.type})
+                  </Text>
+                  <Text style={styles.walletMeta}>
+                    Balance: {summary.currency} {summary.balance.toFixed(2)}
+                  </Text>
+                  {wallet.description ? (
+                    <Text style={styles.walletDescription}>
+                      {wallet.description}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+
+              <View style={styles.walletActions}>
+                <TouchableOpacity onPress={() => handleEditWallet(wallet)}>
+                  <Feather name="edit-2" size={20} color="black" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleDeleteWallet(wallet)}
+                  disabled={isDefaultWallet}
+                  style={isDefaultWallet ? { opacity: 0.35 } : undefined}
+                >
+                  <Feather name="trash-2" size={20} color="#dc2626" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      <WalletDialog
+        visible={walletDialogVisible}
+        onClose={() => setWalletDialogVisible(false)}
+        walletToEdit={editingWallet}
+      />
 
       {/* Payment Providers */}
       <View style={styles.section}>
@@ -520,6 +674,70 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#9d9da5ff",
   },
+  walletBox: {
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    padding: 18,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#9d9da5ff",
+  },
+  walletLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    // flex: 1,
+    // marginRight: 32,
+  },
+  // walletIconWrap: {
+  //   width: 36,
+  //   height: 36,
+  //   borderRadius: 10,
+  //   backgroundColor: "#f3f4f6",
+  //   alignItems: "center",
+  //   justifyContent: "center",
+  //   marginRight: 12,
+  // },
+  // walletIcon: {
+  //   fontSize: 18,
+  // },
+  walletText: {
+    // flex: 1,
+  },
+  walletTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    // marginRight: 0,
+  },
+  defaultBadge: {
+    backgroundColor: "#dcfce7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+    borderRadius: 999,
+  },
+  defaultBadgeText: {
+    color: "#166534",
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  walletMeta: {
+    color: "#6b7280",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  walletDescription: {
+    color: "#374151",
+    fontSize: 13,
+    marginTop: 4,
+  },
+  walletActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
   categoryColor: {
     width: 12,
     height: 12,
@@ -527,7 +745,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   categoryName: {
-    flex: 1,
     fontSize: 16,
   },
   merchantContainer: {
