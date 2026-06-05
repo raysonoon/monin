@@ -22,7 +22,7 @@ export default function DateDialog({
   onClose,
   onClear,
 }: Props) {
-  const defaultStyles = useDefaultStyles();
+  const defaultStyles = useDefaultStyles("light");
   const [draft, setDraft] = useState<DateRange>(value);
 
   useEffect(() => {
@@ -43,7 +43,11 @@ export default function DateDialog({
             endDate={draft.endDate}
             maxDate={today}
             onChange={setDraft}
-            styles={defaultStyles}
+            styles={{
+              ...defaultStyles,
+              button_next_image: { tintColor: "#111827" },
+              button_prev_image: { tintColor: "#111827" },
+            }}
           />
 
           <View style={styles.footer}>
@@ -51,7 +55,6 @@ export default function DateDialog({
               <TouchableOpacity
                 onPress={() => {
                   setDraft({ startDate: undefined, endDate: undefined });
-                  onClear();
                 }}
               >
                 <Text>Clear</Text>
