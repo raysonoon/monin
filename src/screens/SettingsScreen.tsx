@@ -24,12 +24,15 @@ import {
   CategorizationRule,
   transactions as transactionsSchema,
 } from "../../db/schema";
+import * as DocumentPicker from "expo-document-picker";
+import { File } from "expo-file-system";
 import ProviderDialog from "../components/ProviderDialog";
 import CategoryDialog from "../components/CategoryDialog";
 import MerchantDialog from "../components/MerchantDialog";
 import WalletDialog from "../components/WalletDialog";
 import { getGeneralWalletId } from "../../db/seed";
 import { getWalletSummary } from "../services/transaction/transactionHelper";
+import { importTransactionsFromCsv } from "../services/transaction/importHelper";
 import Feather from "@expo/vector-icons/Feather";
 
 export const SettingsScreen = () => {
@@ -38,12 +41,15 @@ export const SettingsScreen = () => {
     signIn,
     signOut,
     isLoading,
-    emailData,
     fullSyncEmails,
     isSyncing,
     syncError,
     authStatusMessage,
   } = useGmail();
+
+  // Import states
+  const [isImporting, setIsImporting] = useState(false); // Loading
+  const [importError, setImportError] = useState<string | null>(null); // Error messages
 
   // Provider dialog state
   const [providerDialogVisible, setProviderDialogVisible] = useState(false);
@@ -64,6 +70,44 @@ export const SettingsScreen = () => {
   const [generalWalletId, setGeneralWalletId] = useState<number | null>(null);
 
   // Handlers
+  const handleImportCsv = async () => {
+    try {
+      setIsImporting(true);
+      setImportError(null);
+
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+
+      if (!asset.name?.toLowerCase().endsWith(".csv")) {
+        throw new Error("Please select a .csv file.");
+      }
+      const csvText = await new File(asset.uri).text();
+
+      const outcome = await importTransactionsFromCsv(csvText, {
+        source: "CSV Import",
+        category: "Uncategorized",
+      });
+
+      Alert.alert(
+        "Import complete",
+        `Imported ${outcome.imported} transactions.`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setImportError(message);
+      Alert.alert("Import failed", message);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleAddProvider = () => {
     setEditingProvider(null); // Clear data for "Add Mode"
     setProviderDialogVisible(true);
@@ -350,7 +394,34 @@ export const SettingsScreen = () => {
       {/* Import Transactions */}
       <View style={styles.section}>
         <Text style={styles.title}>Import Transactions</Text>
-        <Text style={styles.subtitle}>Import transaction .json file</Text>
+        <Text style={styles.subtitle}>
+          .csv file with date (YYYY-MM-DD), merchant, amount, currency, type
+          (income/expense)
+        </Text>
+        {importError ? (
+          <View style={styles.sessionBanner}>
+            <Feather name="alert-circle" size={14} color="#92400e" />
+            <Text style={styles.sessionBannerText}>{importError}</Text>
+          </View>
+        ) : null}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            isImporting && styles.buttonDisabled,
+            { marginTop: 5 },
+          ]}
+          onPress={handleImportCsv}
+          disabled={isImporting}
+        >
+          {isImporting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Feather name="upload" size={16} color="white" />
+              <Text style={styles.buttonText}>Upload CSV File</Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Wallets */}
