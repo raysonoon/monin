@@ -16,6 +16,7 @@ import {
   Transaction,
   categories as categoriesSchema,
 } from "../../db/schema";
+import { useGmail } from "../hooks/useGmail";
 import TransactionDialog from "../components/TransactionDialog";
 import {
   getMonthlyCashFlow,
@@ -31,6 +32,12 @@ export const HomeScreen = () => {
   const font = useFont(segoe, 14);
 
   const router = useRouter();
+
+  const { quickSyncEmails, isSyncing } = useGmail();
+
+  const handleQuickSync = async () => {
+    await quickSyncEmails();
+  };
 
   // Transaction dialog state
   const [transactionDialogVisible, setTransactionDialogVisible] =
@@ -278,7 +285,7 @@ export const HomeScreen = () => {
                 chartBounds={chartBounds}
                 betweenGroupPadding={0.3}
                 roundedCorners={{ topLeft: 4, topRight: 4 }}
-                barWidth={16}
+                barWidth={8}
               >
                 <BarGroup.Bar points={points.income} color="#16a34a" />
                 <BarGroup.Bar points={points.expense} color="#dc2626" />
@@ -304,9 +311,21 @@ export const HomeScreen = () => {
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity onPress={() => router.push("/transactions")}>
-              <Text style={styles.viewAllText}>View All</Text>
-            </TouchableOpacity>
+            <View style={styles.sectionActions}>
+              <TouchableOpacity onPress={handleQuickSync} disabled={isSyncing}>
+                <Text
+                  style={[
+                    styles.quickSyncText,
+                    isSyncing && styles.quickSyncTextDisabled,
+                  ]}
+                >
+                  {isSyncing ? "Syncing..." : "Quick Sync"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push("/transactions")}>
+                <Text style={styles.viewAllText}>View All</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {recentTransactions.length > 0 ? (
@@ -519,7 +538,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15,
+  },
+  sectionActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 10,
+  },
+  quickSyncText: {
+    color: "#2563EB",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  quickSyncTextDisabled: {
+    opacity: 0.7,
   },
   viewAllText: {
     color: "#2563EB",
