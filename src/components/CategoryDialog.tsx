@@ -153,6 +153,7 @@ export default function CategoryDialog({
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. Food & Dining"
+                  placeholderTextColor="#9ca3af"
                   value={name}
                   onChangeText={setName}
                 />
