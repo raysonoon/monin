@@ -19,6 +19,7 @@ import {
 } from "../../db/schema";
 import Feather from "@expo/vector-icons/Feather";
 import { DateType } from "react-native-ui-datepicker";
+import FilterDialog from "../components/FilterDialog";
 import DateDialog from "../components/DateDialog";
 import TransactionDialog from "../components/TransactionDialog";
 import {
@@ -76,6 +77,9 @@ export const TransactionsScreen = () => {
       ? null
       : getWalletSummary(selectedWalletTransactions, selectedWalletData);
 
+  // --- State for filter dialog ---
+  const [isFilterDialogVisible, setIsFilterDialogVisible] = useState(false);
+
   // --- State for provider dropdown ---
   const [selectedProvider, setSelectedProvider] = useState("All");
   const [isProviderOpen, setIsProviderOpen] = useState(false);
@@ -84,10 +88,15 @@ export const TransactionsScreen = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
-  // --- State for Filters ---
+  // --- State for search ---
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+
+  // --- State for filter chips ---
   const [selectedType, setSelectedType] = useState("All");
   const [selectedCurrency, setSelectedCurrency] = useState("All");
+
+  // --- State for pagination ---
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -200,7 +209,7 @@ export const TransactionsScreen = () => {
   ]);
 
   return (
-    <View>
+    <View style={styles.screen}>
       <KeyboardAwareScrollView
         ref={scrollRef}
         contentContainerStyle={styles.container}
@@ -228,254 +237,17 @@ export const TransactionsScreen = () => {
             <Text style={styles.cardLabel}>Total Expenses</Text>
           </View>
         </View>
-
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Filters</Text>
-
-          {/* Date Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.subTitle}>Date range</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setIsDateDialogVisible(true);
-                setIsWalletOpen(false);
-                setIsProviderOpen(false);
-                setIsCategoryOpen(false);
-              }}
-            >
-              <TextInput
-                style={styles.dateInput}
-                value={
-                  range.startDate && range.endDate
-                    ? `${new Date(range.startDate as Date).toLocaleDateString()} - ${new Date(range.endDate as Date).toLocaleDateString()}`
-                    : ""
-                }
-                placeholder="Choose date range"
-                placeholderTextColor="#9ca3af"
-                editable={false}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Wallet Dropdown Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.subTitle}>Wallet</Text>
-
-            <TouchableOpacity
-              style={styles.dropdownTrigger}
-              onPress={() => {
-                setIsWalletOpen((open) => !open);
-                setIsProviderOpen(false);
-                setIsCategoryOpen(false);
-              }}
-            >
-              <Text style={styles.triggerText}>
-                {selectedWallet === "All"
-                  ? "All"
-                  : (wallets.find((w) => String(w.id) === selectedWallet)
-                      ?.name ?? "Wallet")}
-              </Text>
-              <Feather
-                name={isWalletOpen ? "chevron-up" : "chevron-down"}
-                size={16}
-                color="#6b7280"
-              />
-            </TouchableOpacity>
-
-            {isWalletOpen ? (
-              <View style={styles.dropdownListContainer}>
-                <TouchableOpacity
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedWallet("All");
-                    setIsWalletOpen(false);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text style={styles.itemText}>All</Text>
-                </TouchableOpacity>
-
-                {wallets.map((wallet) => (
-                  <TouchableOpacity
-                    key={wallet.id}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedWallet(String(wallet.id));
-                      setIsWalletOpen(false);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <Text style={styles.itemText}>{wallet.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
-            {walletSummary ? (
-              <View style={styles.summaryWallet}>
-                <Text style={styles.summaryText}>
-                  Balance: {walletSummary.currency}{" "}
-                  {walletSummary.balance.toFixed(2)}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Income: {walletSummary.currency}{" "}
-                  {walletSummary.income.toFixed(2)}
-                </Text>
-                <Text style={styles.summaryText}>
-                  Expense: {walletSummary.currency}{" "}
-                  {walletSummary.expense.toFixed(2)}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-
-          {/* Provider Dropdown Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.subTitle}>Provider</Text>
-
-            <TouchableOpacity
-              style={styles.dropdownTrigger}
-              onPress={() => {
-                setIsProviderOpen((open) => !open);
-                setIsWalletOpen(false);
-                setIsCategoryOpen(false);
-              }}
-            >
-              <Text style={styles.triggerText}>
-                {selectedProvider === "All"
-                  ? "All"
-                  : (providers.find((p) => String(p.id) === selectedProvider)
-                      ?.name ?? "Provider")}
-              </Text>
-              <Feather
-                name={isProviderOpen ? "chevron-up" : "chevron-down"}
-                size={16}
-                color="#6b7280"
-              />
-            </TouchableOpacity>
-
-            {isProviderOpen ? (
-              <View style={styles.dropdownListContainer}>
-                <TouchableOpacity
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedProvider("All");
-                    setIsProviderOpen(false);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text style={styles.itemText}>All</Text>
-                </TouchableOpacity>
-
-                {providers.map((provider) => (
-                  <TouchableOpacity
-                    key={provider.id}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedProvider(String(provider.id));
-                      setIsProviderOpen(false);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <Text style={styles.itemText}>{provider.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
-          </View>
-
-          {/* Category Dropdown Filter */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.subTitle}>Category</Text>
-
-            <TouchableOpacity
-              style={styles.dropdownTrigger}
-              onPress={() => {
-                setIsCategoryOpen((open) => !open);
-                setIsWalletOpen(false);
-                setIsProviderOpen(false);
-              }}
-            >
-              <Text style={styles.triggerText}>
-                {selectedCategory === "All"
-                  ? "All"
-                  : (categories.find((c) => c.name === selectedCategory)
-                      ?.name ?? "Category")}
-              </Text>
-              <Feather
-                name={isCategoryOpen ? "chevron-up" : "chevron-down"}
-                size={16}
-                color="#6b7280"
-              />
-            </TouchableOpacity>
-
-            {isCategoryOpen ? (
-              <View style={styles.dropdownListContainer}>
-                <TouchableOpacity
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedCategory("All");
-                    setIsCategoryOpen(false);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <Text style={styles.itemText}>All</Text>
-                </TouchableOpacity>
-
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedCategory(category.name);
-                      setIsCategoryOpen(false);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <Text style={styles.itemText}>{category.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : null}
-          </View>
-
-          {/* Type Chips */}
-          <View style={styles.filterGroup}>
-            <Text style={styles.subTitle}>Type</Text>
-            <View style={styles.typeRow}>
-              {types.map((ty) => (
-                <TouchableOpacity
-                  key={ty}
-                  onPress={() => {
-                    setSelectedType(ty);
-                    setCurrentPage(1);
-                  }}
-                  style={[
-                    styles.filterChip,
-                    ty === selectedType && styles.filterChipActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.typeChipText,
-                      ty === selectedType && styles.filterChipTextActive,
-                    ]}
-                  >
-                    {ty}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-
         {/* Search Bar */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Search</Text>
+        <View style={styles.searchRow}>
+          {/* <Text style={styles.sectionTitle}>Search</Text> */}
           <TextInput
             style={styles.searchInput}
             placeholder="Search merchant or notes..."
             placeholderTextColor="#9ca3af"
-            onChangeText={setSearch}
+            value={searchInput}
+            onChangeText={setSearchInput}
+            onEndEditing={() => setSearch(searchInput)}
+            onBlur={() => setSearch(searchInput)}
             onFocus={(event) => {
               setIsWalletOpen(false);
               setIsProviderOpen(false);
@@ -485,7 +257,37 @@ export const TransactionsScreen = () => {
                 scrollRef.current.scrollToFocusedInput(event.target);
               }
             }}
+            returnKeyType="done"
           />
+          <TouchableOpacity
+            style={styles.filterIconButton}
+            onPress={() => setIsFilterDialogVisible(true)}
+          >
+            <Feather name="sliders" size={18} color="#111827" />
+          </TouchableOpacity>
+        </View>
+        {/* Date Filter */}
+        <View style={styles.filterGroup}>
+          <TouchableOpacity
+            onPress={() => {
+              setIsDateDialogVisible(true);
+              setIsWalletOpen(false);
+              setIsProviderOpen(false);
+              setIsCategoryOpen(false);
+            }}
+          >
+            <TextInput
+              style={styles.dateInput}
+              value={
+                range.startDate && range.endDate
+                  ? `${new Date(range.startDate as Date).toLocaleDateString()} - ${new Date(range.endDate as Date).toLocaleDateString()}`
+                  : ""
+              }
+              placeholder="Choose date range"
+              placeholderTextColor="#9ca3af"
+              editable={false}
+            />
+          </TouchableOpacity>
         </View>
 
         {/* Currency */}
@@ -515,7 +317,6 @@ export const TransactionsScreen = () => {
             ))}
           </View>
         </ScrollView>
-
         {/* Transactions Table */}
         <View style={styles.tableCard}>
           <View style={styles.tableHeader}>
@@ -622,6 +423,24 @@ export const TransactionsScreen = () => {
           </View>
         </View>
       </KeyboardAwareScrollView>
+      <FilterDialog
+        visible={isFilterDialogVisible}
+        onClose={() => setIsFilterDialogVisible(false)}
+        onApply={({ type, wallet, provider, category }) => {
+          setSelectedType(type);
+          setSelectedWallet(wallet);
+          setSelectedProvider(provider);
+          setSelectedCategory(category);
+        }}
+        initialType={selectedType}
+        initialWallet={selectedWallet}
+        initialProvider={selectedProvider}
+        initialCategory={selectedCategory}
+        types={types}
+        wallets={wallets}
+        providers={providers}
+        categories={categories}
+      />
       <DateDialog
         visible={isDateDialogVisible}
         value={range}
@@ -639,6 +458,10 @@ export const TransactionsScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
   header: {
     fontSize: 26,
     fontWeight: "700",
@@ -689,6 +512,21 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginBottom: 5,
   },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 12,
+  },
+  filterIconButton: {
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   filterGroup: {
     marginBottom: 10,
   },
@@ -728,21 +566,26 @@ const styles = StyleSheet.create({
   dateInput: {
     backgroundColor: "#f3f4f6",
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
     padding: 12,
     fontSize: 16,
     color: "#1f2937",
   },
   searchInput: {
     backgroundColor: "#f3f4f6",
+    flex: 2,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
     padding: 12,
     fontSize: 16,
     color: "#1f2937",
-    marginBottom: 6,
   },
   tableCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
+    marginBottom: 15,
     padding: 12,
     elevation: 2,
   },
