@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { db } from "../../db/client";
 import {
   transactions as transactionsSchema,
   Transaction,
+  providers as providersSchema,
   categories as categoriesSchema,
   wallets as walletsSchema,
 } from "../../db/schema";
@@ -25,7 +27,12 @@ import {
 } from "../services/transaction/transactionHelper";
 
 export const TransactionsScreen = () => {
+  const scrollRef = useRef<any>(null);
+
   const { data: wallets = [] } = useLiveQuery(db.select().from(walletsSchema));
+  const { data: providers = [] } = useLiveQuery(
+    db.select().from(providersSchema)
+  );
   const { data: transactions = [] } = useLiveQuery(
     db.select().from(transactionsSchema)
   );
@@ -47,7 +54,7 @@ export const TransactionsScreen = () => {
     setSelectedTransaction(null);
   };
 
-  // State for wallet dropdown ---
+  // --- State for wallet dropdown ---
   const [selectedWallet, setSelectedWallet] = useState("All");
   const [isWalletOpen, setIsWalletOpen] = useState(false);
 
@@ -69,9 +76,16 @@ export const TransactionsScreen = () => {
       ? null
       : getWalletSummary(selectedWalletTransactions, selectedWalletData);
 
+  // --- State for provider dropdown ---
+  const [selectedProvider, setSelectedProvider] = useState("All");
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
+
+  // --- State for category dropdown ---
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+
   // --- State for Filters ---
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
   const [selectedCurrency, setSelectedCurrency] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
@@ -99,21 +113,31 @@ export const TransactionsScreen = () => {
 
     return tx >= start && tx <= end;
   };
+
+  // Type chips
+  const types = useMemo(() => {
+    const unique = Array.from(new Set(transactions.map((t) => t.type)));
+    return ["All", ...unique];
+  }, [transactions]);
+
   // Currency chips
   const currencies = useMemo(() => {
     const unique = Array.from(new Set(transactions.map((t) => t.currency)));
     return ["All", ...unique];
   }, [transactions]);
 
-  // --- 1. Filter Logic ---
+  // --- Filter Logic ---
   const filteredData = useMemo(() => {
     return transactions
       .filter((t) => {
         const matchesSearch =
           t.merchant.toLowerCase().includes(search.toLowerCase()) ||
-          t.category.toLowerCase().includes(search.toLowerCase());
+          (t.notes || "").toLowerCase().includes(search.toLowerCase());
         const matchesWallet =
           selectedWallet === "All" || String(t.walletId) === selectedWallet;
+        const matchesProvider =
+          selectedProvider === "All" ||
+          String(t.providerId) === selectedProvider;
         const matchesCat =
           selectedCategory === "All" || t.category === selectedCategory;
         const matchesType = selectedType === "All" || t.type === selectedType;
@@ -123,6 +147,7 @@ export const TransactionsScreen = () => {
 
         return (
           matchesWallet &&
+          matchesProvider &&
           matchesSearch &&
           matchesCat &&
           matchesType &&
@@ -135,6 +160,7 @@ export const TransactionsScreen = () => {
     transactions,
     search,
     selectedWallet,
+    selectedProvider,
     selectedCategory,
     selectedType,
     selectedCurrency,
@@ -142,20 +168,23 @@ export const TransactionsScreen = () => {
     range,
   ]);
 
-  // --- 2. Pagination Logic ---
+  // --- Pagination Logic ---
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredData.slice(start, start + itemsPerPage);
   }, [filteredData, currentPage]);
 
-  // --- 3. Summary Totals ---
-  const totalIncome = transactions
+  // --- Summary Totals ---
+  const totalTransactions = filteredData.length;
+
+  const totalIncome = filteredData
     .filter((t) => t.type === "income" && t.baseAmount)
-    .reduce((s, t) => s + t.baseAmount, 0);
-  const totalExpense = transactions
+    .reduce((sum, t) => sum + t.baseAmount, 0);
+
+  const totalExpense = filteredData
     .filter((t) => t.type === "expense" && t.baseAmount)
-    .reduce((s, t) => s + t.baseAmount, 0);
+    .reduce((sum, t) => sum + t.baseAmount, 0);
 
   // Reset pagination when filter changes
   useEffect(() => {
@@ -166,17 +195,24 @@ export const TransactionsScreen = () => {
     selectedType,
     selectedCurrency,
     selectedWallet,
+    selectedProvider,
     range,
   ]);
 
   return (
     <View>
-      <ScrollView contentContainerStyle={styles.container}>
+      <KeyboardAwareScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="never"
+        extraScrollHeight={100}
+        enableResetScrollToCoords={false}
+      >
         <Text style={styles.header}>Transactions</Text>
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
           <View style={styles.card}>
-            <Text style={styles.cardValue}>{transactions.length}</Text>
+            <Text style={styles.cardValue}>{totalTransactions}</Text>
             <Text style={styles.cardLabel}>Total Transactions</Text>
           </View>
           <View style={styles.card}>
@@ -193,99 +229,262 @@ export const TransactionsScreen = () => {
           </View>
         </View>
 
-        {/* Wallet Dropdown Filter */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Wallet</Text>
+          <Text style={styles.sectionTitle}>Filters</Text>
 
-          <TouchableOpacity
-            style={styles.dropdownTrigger}
-            onPress={() => setIsWalletOpen((open) => !open)}
-          >
-            <Text style={styles.triggerText}>
-              {selectedWallet === "All"
-                ? "All Wallets"
-                : (wallets.find((w) => String(w.id) === selectedWallet)?.name ??
-                  "Wallet")}
-            </Text>
-            <Feather
-              name={isWalletOpen ? "chevron-up" : "chevron-down"}
-              size={16}
-              color="#6b7280"
-            />
-          </TouchableOpacity>
+          {/* Date Filter */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.subTitle}>Date range</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setIsDateDialogVisible(true);
+                setIsWalletOpen(false);
+                setIsProviderOpen(false);
+                setIsCategoryOpen(false);
+              }}
+            >
+              <TextInput
+                style={styles.dateInput}
+                value={
+                  range.startDate && range.endDate
+                    ? `${new Date(range.startDate as Date).toLocaleDateString()} - ${new Date(range.endDate as Date).toLocaleDateString()}`
+                    : ""
+                }
+                placeholder="Choose date range"
+                placeholderTextColor="#9ca3af"
+                editable={false}
+              />
+            </TouchableOpacity>
+          </View>
 
-          {isWalletOpen ? (
-            <View style={styles.dropdownListContainer}>
-              <TouchableOpacity
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setSelectedWallet("All");
-                  setIsWalletOpen(false);
-                  setCurrentPage(1);
-                }}
-              >
-                <Text style={styles.itemText}>All Wallets</Text>
-              </TouchableOpacity>
+          {/* Wallet Dropdown Filter */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.subTitle}>Wallet</Text>
 
-              {wallets.map((wallet) => (
+            <TouchableOpacity
+              style={styles.dropdownTrigger}
+              onPress={() => {
+                setIsWalletOpen((open) => !open);
+                setIsProviderOpen(false);
+                setIsCategoryOpen(false);
+              }}
+            >
+              <Text style={styles.triggerText}>
+                {selectedWallet === "All"
+                  ? "All"
+                  : (wallets.find((w) => String(w.id) === selectedWallet)
+                      ?.name ?? "Wallet")}
+              </Text>
+              <Feather
+                name={isWalletOpen ? "chevron-up" : "chevron-down"}
+                size={16}
+                color="#6b7280"
+              />
+            </TouchableOpacity>
+
+            {isWalletOpen ? (
+              <View style={styles.dropdownListContainer}>
                 <TouchableOpacity
-                  key={wallet.id}
                   style={styles.dropdownItem}
                   onPress={() => {
-                    setSelectedWallet(String(wallet.id));
+                    setSelectedWallet("All");
                     setIsWalletOpen(false);
                     setCurrentPage(1);
                   }}
                 >
-                  <Text style={styles.itemText}>{wallet.name}</Text>
+                  <Text style={styles.itemText}>All</Text>
+                </TouchableOpacity>
+
+                {wallets.map((wallet) => (
+                  <TouchableOpacity
+                    key={wallet.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedWallet(String(wallet.id));
+                      setIsWalletOpen(false);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <Text style={styles.itemText}>{wallet.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+            {walletSummary ? (
+              <View style={styles.summaryWallet}>
+                <Text style={styles.summaryText}>
+                  Balance: {walletSummary.currency}{" "}
+                  {walletSummary.balance.toFixed(2)}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Income: {walletSummary.currency}{" "}
+                  {walletSummary.income.toFixed(2)}
+                </Text>
+                <Text style={styles.summaryText}>
+                  Expense: {walletSummary.currency}{" "}
+                  {walletSummary.expense.toFixed(2)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Provider Dropdown Filter */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.subTitle}>Provider</Text>
+
+            <TouchableOpacity
+              style={styles.dropdownTrigger}
+              onPress={() => {
+                setIsProviderOpen((open) => !open);
+                setIsWalletOpen(false);
+                setIsCategoryOpen(false);
+              }}
+            >
+              <Text style={styles.triggerText}>
+                {selectedProvider === "All"
+                  ? "All"
+                  : (providers.find((p) => String(p.id) === selectedProvider)
+                      ?.name ?? "Provider")}
+              </Text>
+              <Feather
+                name={isProviderOpen ? "chevron-up" : "chevron-down"}
+                size={16}
+                color="#6b7280"
+              />
+            </TouchableOpacity>
+
+            {isProviderOpen ? (
+              <View style={styles.dropdownListContainer}>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedProvider("All");
+                    setIsProviderOpen(false);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <Text style={styles.itemText}>All</Text>
+                </TouchableOpacity>
+
+                {providers.map((provider) => (
+                  <TouchableOpacity
+                    key={provider.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedProvider(String(provider.id));
+                      setIsProviderOpen(false);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <Text style={styles.itemText}>{provider.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+          </View>
+
+          {/* Category Dropdown Filter */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.subTitle}>Category</Text>
+
+            <TouchableOpacity
+              style={styles.dropdownTrigger}
+              onPress={() => {
+                setIsCategoryOpen((open) => !open);
+                setIsWalletOpen(false);
+                setIsProviderOpen(false);
+              }}
+            >
+              <Text style={styles.triggerText}>
+                {selectedCategory === "All"
+                  ? "All"
+                  : (categories.find((c) => c.name === selectedCategory)
+                      ?.name ?? "Category")}
+              </Text>
+              <Feather
+                name={isCategoryOpen ? "chevron-up" : "chevron-down"}
+                size={16}
+                color="#6b7280"
+              />
+            </TouchableOpacity>
+
+            {isCategoryOpen ? (
+              <View style={styles.dropdownListContainer}>
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedCategory("All");
+                    setIsCategoryOpen(false);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <Text style={styles.itemText}>All</Text>
+                </TouchableOpacity>
+
+                {categories.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedCategory(category.name);
+                      setIsCategoryOpen(false);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <Text style={styles.itemText}>{category.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+          </View>
+
+          {/* Type Chips */}
+          <View style={styles.filterGroup}>
+            <Text style={styles.subTitle}>Type</Text>
+            <View style={styles.typeRow}>
+              {types.map((ty) => (
+                <TouchableOpacity
+                  key={ty}
+                  onPress={() => {
+                    setSelectedType(ty);
+                    setCurrentPage(1);
+                  }}
+                  style={[
+                    styles.filterChip,
+                    ty === selectedType && styles.filterChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.typeChipText,
+                      ty === selectedType && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {ty}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
-          ) : null}
-          {walletSummary ? (
-            <View style={styles.summaryWallet}>
-              <Text style={styles.summaryText}>
-                Balance: {walletSummary.currency}{" "}
-                {walletSummary.balance.toFixed(2)}
-              </Text>
-              <Text style={styles.summaryText}>
-                Income: {walletSummary.currency}{" "}
-                {walletSummary.income.toFixed(2)}
-              </Text>
-              <Text style={styles.summaryText}>
-                Expense: {walletSummary.currency}{" "}
-                {walletSummary.expense.toFixed(2)}
-              </Text>
-            </View>
-          ) : null}
+          </View>
         </View>
 
-        {/* Date Filter */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Date range</Text>
-          <TouchableOpacity onPress={() => setIsDateDialogVisible(true)}>
-            <TextInput
-              style={styles.dateInput}
-              value={
-                range.startDate && range.endDate
-                  ? `${new Date(range.startDate as Date).toLocaleDateString()} - ${new Date(range.endDate as Date).toLocaleDateString()}`
-                  : ""
-              }
-              placeholder="Choose date range"
-              placeholderTextColor="#9ca3af"
-              editable={false}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Filter Bar */}
+        {/* Search Bar */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Search</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search merchant or category..."
+            placeholder="Search merchant or notes..."
             placeholderTextColor="#9ca3af"
             onChangeText={setSearch}
+            onFocus={(event) => {
+              setIsWalletOpen(false);
+              setIsProviderOpen(false);
+              setIsCategoryOpen(false);
+
+              if (scrollRef.current) {
+                scrollRef.current.scrollToFocusedInput(event.target);
+              }
+            }}
           />
         </View>
 
@@ -422,7 +621,7 @@ export const TransactionsScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
       <DateDialog
         visible={isDateDialogVisible}
         value={range}
@@ -485,6 +684,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 10,
   },
+  subTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 5,
+  },
+  filterGroup: {
+    marginBottom: 10,
+  },
   dropdownTrigger: {
     backgroundColor: "#f3f4f6",
     borderRadius: 12,
@@ -524,7 +731,6 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: "#1f2937",
-    marginBottom: 6,
   },
   searchInput: {
     backgroundColor: "#f3f4f6",
@@ -604,6 +810,16 @@ const styles = StyleSheet.create({
   disabledNext: {
     color: "#d1d5db",
     opacity: 0.5,
+  },
+  typeRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  typeChipText: {
+    fontSize: 12,
+    fontWeight: 500,
+    color: "#374151",
+    textTransform: "capitalize",
   },
   filterRow: {
     flexDirection: "row",
