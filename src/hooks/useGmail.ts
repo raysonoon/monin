@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "../context/auth";
-import { syncAllTransactions } from "../services/gmail/gmailService";
-import type { ParsedTransaction } from "../types/transaction";
+import {
+  quickSyncTransactions,
+  fullSyncTransactions,
+} from "../services/gmail/gmailService";
 
 export const useGmail = () => {
   const {
@@ -13,61 +15,44 @@ export const useGmail = () => {
     ensureGoogleAccessToken,
   } = useAuth();
 
-  const [emailData, setEmailData] = useState<ParsedTransaction | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
-      setEmailData(null);
       setIsSyncing(false);
       setSyncError(null);
     }
   }, [user]);
 
-  const listEmails = useCallback(async () => {
-    setIsSyncing(true);
-    setSyncError(null);
-    try {
-      const googleAccessToken = await ensureGoogleAccessToken();
+  const syncEmails = useCallback(
+    async (mode: "full" | "quick" = "full") => {
+      setIsSyncing(true);
+      setSyncError(null);
+      try {
+        const googleAccessToken = await ensureGoogleAccessToken();
 
-      if (!googleAccessToken) {
-        setSyncError("Not connected to Gmail.");
-        return;
+        if (!googleAccessToken) {
+          setSyncError("Not connected to Gmail.");
+          return;
+        }
+        const transactions =
+          mode === "quick"
+            ? await quickSyncTransactions(googleAccessToken)
+            : await fullSyncTransactions(googleAccessToken);
+
+        console.log("Total Transactions Synced:", transactions.length);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "An unknown error occurred.";
+        setSyncError("Sync failed: " + message);
+        console.error(error);
+      } finally {
+        setIsSyncing(false);
       }
-      const transactions = await syncAllTransactions(googleAccessToken);
-
-      if (transactions.length > 0) {
-        // Display the most recent transaction for the 'Run Test' result
-        const tx = transactions[0];
-        setEmailData({
-          date: tx.date,
-          id: tx.id ?? 0,
-          emailId: tx.emailId,
-          providerId: tx.providerId ?? null,
-          merchant: tx.merchant,
-          amount: tx.amount,
-          currency: tx.currency,
-          category: tx.category,
-          source: tx.source,
-          type: tx.type,
-          notes: tx.notes ?? null,
-          createdAt: tx.createdAt ?? null,
-        });
-      } else {
-        setEmailData(null);
-      }
-
-      console.log("Total Transactions Synced:", transactions.length);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "An unknown error occurred.";
-      setSyncError("Sync failed: " + message);
-      console.error(error);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [ensureGoogleAccessToken]);
+    },
+    [ensureGoogleAccessToken]
+  );
 
   return {
     // Auth State
@@ -77,8 +62,8 @@ export const useGmail = () => {
     isLoading: isLoading || isSyncing,
 
     // Sync State
-    emailData,
-    listEmails,
+    fullSyncEmails: () => syncEmails("full"),
+    quickSyncEmails: () => syncEmails("quick"),
     isSyncing,
     syncError,
     authStatusMessage,

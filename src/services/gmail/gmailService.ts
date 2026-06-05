@@ -1,4 +1,8 @@
 import { htmlToText } from "html-to-text";
+import {
+  GMAIL_QUICK_LOOKBACK_DAYS,
+  GMAIL_QUICK_MAX_RESULTS,
+} from "../../../utils/constants";
 import { parseEmailWithProvider } from "../../../utils/gmailParser";
 import { categorizationService } from "../categorizationService";
 import { convertToSGD } from "../fxService";
@@ -23,36 +27,82 @@ type ParsedNewTransaction = Omit<
   "baseCurrency" | "baseAmount" | "fxRate" | "fxDate"
 >;
 
+type SyncOptions = {
+  mode?: "full" | "quick";
+  lookbackDays?: number;
+  quickMaxResults?: number;
+  fullPageSize?: number;
+};
+
+const buildQuery = (provider: Provider, options: SyncOptions) => {
+  const config = JSON.parse(provider.config);
+  const base = config.gmailQuery ?? "";
+
+  if (options.mode === "quick") {
+    const days = options.lookbackDays ?? GMAIL_QUICK_LOOKBACK_DAYS;
+    return `${base} newer_than:${days}d`;
+  }
+
+  return base;
+};
+
 /**
  * Lists email message IDs matching the provider's specific query.
  * @returns A promise that resolves to an array of message IDs.
  */
 const listEmailsForProvider = async (
   provider: Provider,
-  googleAccessToken: string
+  googleAccessToken: string,
+  options: SyncOptions = {}
 ): Promise<string[]> => {
-  const config = JSON.parse(provider.config);
-  try {
-    const response = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(config.gmailQuery)}`,
-      {
-        method: "GET",
-        headers: { Authorization: `Bearer ${googleAccessToken}` },
-      }
-    );
+  const mode = options.mode ?? "full";
+  const query = buildQuery(provider, options);
+  // const config = JSON.parse(provider.config);
+  const pageSize =
+    mode === "quick"
+      ? Math.min(options.quickMaxResults ?? GMAIL_QUICK_MAX_RESULTS, 500)
+      : Math.min(options.fullPageSize ?? 500, 500);
 
-    if (!response.ok)
-      throw new Error(
-        `Failed to fetch email list for ${provider.name}. Status: ${response.status}`
+  const maxPages = mode === "quick" ? 1 : 100;
+
+  const ids: string[] = [];
+  let pageToken: string | undefined = undefined;
+  let page = 0;
+
+  try {
+    do {
+      const params = new URLSearchParams({
+        q: query,
+        maxResults: String(pageSize),
+      });
+      if (pageToken) params.set("pageToken", pageToken);
+
+      const response = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params.toString()}`,
+        {
+          method: "GET",
+          headers: { Authorization: `Bearer ${googleAccessToken}` },
+        }
       );
 
-    const data: GmailMessagesList = await response.json();
+      if (!response.ok)
+        throw new Error(
+          `Failed to fetch email list for ${provider.name}. Status: ${response.status}`
+        );
 
-    return data.messages ? data.messages.map((m) => m.id) : [];
+      const data: GmailMessagesList & { nextPageToken?: string } =
+        await response.json();
+      if (data.messages?.length) ids.push(...data.messages.map((m) => m.id));
+
+      pageToken = data.nextPageToken;
+      page += 1;
+    } while (pageToken && page < maxPages);
   } catch (err) {
     console.error(`Error fetching for ${provider.name}:`, err);
     return [];
   }
+
+  return ids;
 };
 
 /**
@@ -133,55 +183,73 @@ const parseEmail = async (
 };
 
 /**
- * Coordinates the full synchronization process across all defined email providers.
+ * Coordinates the synchronization process across all defined email providers.
  * @returns A promise that resolves to an array of all successfully parsed Transaction objects.
  */
-export const syncAllTransactions = async (
-  googleAccessToken: string
+const syncTransactions = async (
+  googleAccessToken: string,
+  options: SyncOptions = { mode: "full" }
 ): Promise<NewTransaction[]> => {
   await categorizationService.init(); // Initialise rules from DB into memory before loop
-
   const generalWalletId = await getGeneralWalletId();
-
   const providers = await db.select().from(providersSchema);
 
   // Get a list of all email IDs already in DB
   const existingRecords = await db
     .select({ emailId: transactions.emailId })
     .from(transactions);
+
   const existingIds = new Set(existingRecords.map((r) => r.emailId)); // Set lookup O(1) complexity
 
   const allTransactions: NewTransaction[] = [];
 
   for (const provider of providers) {
-    console.log(`Processing provider: ${provider.name}...`);
-
-    const messageIds = await listEmailsForProvider(provider, googleAccessToken); // Gets IDs
+    const messageIds = await listEmailsForProvider(
+      provider,
+      googleAccessToken,
+      options
+    );
 
     for (const messageId of messageIds) {
-      // Skip parsing email if emailId already in set
       if (existingIds.has(messageId)) {
-        console.log(`Skipping already parsed email: ${messageId}`);
         continue;
       }
+
       const transaction = await parseEmail(
         messageId,
         provider,
         googleAccessToken
       );
+      if (!transaction) continue;
 
-      if (transaction) {
-        // Save to DB immediately (or collect and bulk insert)
-        await db.insert(transactions).values({
-          ...transaction,
-          walletId: generalWalletId,
-        });
-        allTransactions.push(transaction);
-      }
+      // Ignore duplicates via unique(email_id)
+      await db
+        .insert(transactions)
+        .values({ ...transaction, walletId: generalWalletId })
+        .onConflictDoNothing({ target: transactions.emailId });
+
+      allTransactions.push(transaction);
     }
   }
+
   return allTransactions;
 };
+
+/**
+ * Full sync mode: sync all emails (up to 500 pages)
+ */
+export const fullSyncTransactions = async (googleAccessToken: string) =>
+  syncTransactions(googleAccessToken, { mode: "full", fullPageSize: 500 });
+
+/**
+ * Quick sync mode: sync emails newer than 7 days and capped to 100 emails per page
+ */
+export const quickSyncTransactions = async (googleAccessToken: string) =>
+  syncTransactions(googleAccessToken, {
+    mode: "quick",
+    lookbackDays: GMAIL_QUICK_LOOKBACK_DAYS,
+    quickMaxResults: GMAIL_QUICK_MAX_RESULTS,
+  });
 
 // --- Helper functions ---
 
