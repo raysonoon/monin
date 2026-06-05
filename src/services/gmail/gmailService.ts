@@ -143,8 +143,11 @@ const parseEmail = async (
       headers
     );
 
-    // Handle null merchants safely by defaulting to "Unknown"
-    const merchantName = extractedData?.merchant ?? "Unknown";
+    const rawMerchant = extractedData?.merchant?.trim() ?? "Unknown"; // Handle null merchants safely by defaulting to "Unknown"
+    const merchantName =
+      rawMerchant.toLowerCase() === "cash amount of"
+        ? "Cash Withdrawal"
+        : rawMerchant;
 
     // Determine category based on the extracted merchant name
     const category = categorizationService.categorizeMerchant(merchantName);
@@ -152,7 +155,7 @@ const parseEmail = async (
     const parsedTransaction: ParsedNewTransaction = {
       emailId: messageId,
       providerId: provider.id,
-      merchant: extractedData?.merchant ?? "Unknown",
+      merchant: merchantName ?? "Unknown",
       amount: extractedData?.amount ? Number(extractedData.amount) : 0,
       currency: extractedData?.currency ?? "?",
       date: extractedData?.date ?? new Date().toISOString(),
