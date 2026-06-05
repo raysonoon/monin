@@ -23,10 +23,14 @@ export const GOOGLE_REDIRECT_URI = `${process.env.EXPO_PUBLIC_BASE_URL}/api/auth
 export const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
 // Apple OAuth Constants
-export const APPLE_CLIENT_ID = "com.beto.expoauthexample.web";
+export const APPLE_CLIENT_ID = "com.rayson.monin.web";
 export const APPLE_CLIENT_SECRET = process.env.APPLE_CLIENT_SECRET!;
 export const APPLE_REDIRECT_URI = `${process.env.EXPO_PUBLIC_BASE_URL}/api/auth/apple/callback`;
 export const APPLE_AUTH_URL = "https://appleid.apple.com/auth/authorize";
+
+// Gmail API Constants
+export const GMAIL_QUICK_LOOKBACK_DAYS = 7;
+export const GMAIL_QUICK_MAX_RESULTS = 100;
 
 // Environment Constants
 export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
