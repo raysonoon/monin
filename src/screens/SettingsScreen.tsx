@@ -8,7 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { Image } from "expo-image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useGmail } from "../hooks/useGmail";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
 import { eq } from "drizzle-orm";
@@ -39,7 +39,7 @@ export const SettingsScreen = () => {
     signOut,
     isLoading,
     emailData,
-    listEmails,
+    fullSyncEmails,
     isSyncing,
     syncError,
     authStatusMessage,
@@ -158,8 +158,16 @@ export const SettingsScreen = () => {
     []
   );
 
+  const latestSyncedTransaction = useMemo(() => {
+    return (
+      [...transactions].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      )[0] ?? null
+    );
+  }, [transactions]);
+
   const renderSyncPreview = () => {
-    if (!emailData) {
+    if (!latestSyncedTransaction) {
       return (
         <View style={styles.emptyPreview}>
           <Feather name="info" size={16} color="#9ca3af" />
@@ -176,23 +184,25 @@ export const SettingsScreen = () => {
         <View style={styles.syncCardRow}>
           <View>
             <Text style={styles.syncMerchant}>
-              {emailData.merchant || "Unknown Merchant"}
+              {latestSyncedTransaction.merchant || "Unknown Merchant"}
             </Text>
             <Text style={styles.syncDate}>
-              {emailData.date
-                ? new Date(emailData.date).toLocaleDateString(undefined, {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  })
-                : "No date found"}
+              {new Date(latestSyncedTransaction.date).toLocaleDateString(
+                undefined,
+                {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                }
+              )}
             </Text>
           </View>
           <View style={styles.syncAmountContainer}>
             <Text style={styles.syncAmount}>
-              {emailData.currency} {emailData.amount?.toFixed(2)}
+              {latestSyncedTransaction.currency}{" "}
+              {latestSyncedTransaction.amount?.toFixed(2)}
             </Text>
             <View style={styles.statusBadge}>
               <Text style={styles.statusText}>Success</Text>
@@ -300,36 +310,47 @@ export const SettingsScreen = () => {
         )}
       </View>
 
-      {/* Last Synced Transaction */}
+      {/* Recover Transactions */}
       <View style={styles.section}>
-        <Text style={styles.title}>Last Synced Transaction</Text>
+        <Text style={styles.title}>Recover Transactions</Text>
+        <Text style={styles.subtitle}>
+          Sync all emails to recover lost transactions
+        </Text>
         {syncError ? (
           <View style={styles.sessionBanner}>
             <Feather name="alert-circle" size={14} color="#92400e" />
             <Text style={styles.sessionBannerText}>{syncError}</Text>
           </View>
         ) : null}
-        <View style={styles.section}>
-          {renderSyncPreview()}
-
+        <View>
           <TouchableOpacity
             style={[
               styles.button,
-              { marginTop: 15 },
+              { marginTop: 5 },
               (isSyncing || !user) && styles.buttonDisabled,
             ]}
-            onPress={listEmails}
+            onPress={fullSyncEmails}
             disabled={isSyncing || !user}
           >
             {isSyncing ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>
-                {user ? "Sync All Emails" : "Connect Gmail to Sync"}
+                {user ? "Run Full Sync" : "Connect Gmail to Sync"}
               </Text>
             )}
           </TouchableOpacity>
+          <Text style={[styles.subtitle, { marginTop: 15 }]}>
+            Last sync transaction:
+          </Text>
+          {renderSyncPreview()}
         </View>
+      </View>
+
+      {/* Import Transactions */}
+      <View style={styles.section}>
+        <Text style={styles.title}>Import Transactions</Text>
+        <Text style={styles.subtitle}>Import transaction .json file</Text>
       </View>
 
       {/* Wallets */}
@@ -360,7 +381,7 @@ export const SettingsScreen = () => {
           return (
             <View key={wallet.id} style={styles.walletBox}>
               <View style={styles.walletLeft}>
-                <View style={styles.walletText}>
+                <View>
                   <View style={styles.walletTitleRow}>
                     <Text style={styles.categoryName}>{wallet.name}</Text>
                     {isDefaultWallet ? (
@@ -586,6 +607,7 @@ const styles = StyleSheet.create({
   emptyPreview: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 5,
     gap: 8,
     backgroundColor: "#f9fafb",
     padding: 16,
@@ -600,6 +622,7 @@ const styles = StyleSheet.create({
   },
   syncCard: {
     backgroundColor: "#f8fafc",
+    marginTop: 5,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
@@ -688,34 +711,16 @@ const styles = StyleSheet.create({
   walletLeft: {
     flexDirection: "row",
     alignItems: "center",
-    // flex: 1,
-    // marginRight: 32,
-  },
-  // walletIconWrap: {
-  //   width: 36,
-  //   height: 36,
-  //   borderRadius: 10,
-  //   backgroundColor: "#f3f4f6",
-  //   alignItems: "center",
-  //   justifyContent: "center",
-  //   marginRight: 12,
-  // },
-  // walletIcon: {
-  //   fontSize: 18,
-  // },
-  walletText: {
-    // flex: 1,
   },
   walletTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    // marginRight: 0,
+    justifyContent: "space-between",
   },
   defaultBadge: {
     backgroundColor: "#dcfce7",
     paddingHorizontal: 8,
     paddingVertical: 2,
-    marginLeft: 8,
     borderRadius: 999,
   },
   defaultBadgeText: {
@@ -745,7 +750,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   categoryName: {
-    flex: 1,
     fontSize: 16,
   },
   merchantContainer: {
