@@ -6,6 +6,7 @@ import m0001 from "./0001_nappy_talos.sql";
 import m0002 from "./0002_bumpy_zaran.sql";
 import m0003 from "./0003_harsh_the_order.sql";
 import m0004 from "./0004_puzzling_hex.sql";
+import m0005 from "./0005_dry_anita_blake.sql";
 
 export default {
   journal,
@@ -15,5 +16,6 @@ export default {
     m0002,
     m0003,
     m0004,
+    m0005,
   },
 };

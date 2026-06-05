@@ -89,7 +89,7 @@ export const transactions = sqliteTable("transactions", {
   fxDate: text("fx_date"), // YYYY-MM-DD used for the rate
 
   // Categorization
-  category: text("category").notNull(),
+  category: text("category").notNull().default("Uncategorized"),
   source: text("source").notNull(),
   type: text("type", { enum: ["income", "expense"] })
     .notNull()
