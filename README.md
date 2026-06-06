@@ -1,9 +1,11 @@
 # monin
 
-monin is a React Native (Expo) mobile app designed to help users track their expenses by parsing email notifications. 
+monin is a React Native (Expo) mobile app designed to help users track their expenses and income by parsing email notifications. 
+
+> Currently only Gmail is supported!
 
 ## Features
-Current features (v1.0.00) include
+Current features (v2.0.00) include
 - Auto-categorization
 - Data visualization
 - Financial insights
