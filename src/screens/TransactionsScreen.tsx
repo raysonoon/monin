@@ -55,38 +55,13 @@ export const TransactionsScreen = () => {
     setSelectedTransaction(null);
   };
 
-  // --- State for wallet dropdown ---
-  const [selectedWallet, setSelectedWallet] = useState("All");
-  const [isWalletOpen, setIsWalletOpen] = useState(false);
-
-  const selectedWalletData =
-    selectedWallet === "All"
-      ? null
-      : (wallets.find((wallet) => String(wallet.id) === selectedWallet) ??
-        null);
-
-  const selectedWalletTransactions =
-    selectedWalletData === null
-      ? transactions
-      : transactions.filter(
-          (transaction) => transaction.walletId === selectedWalletData.id
-        );
-
-  const walletSummary =
-    selectedWalletData === null
-      ? null
-      : getWalletSummary(selectedWalletTransactions, selectedWalletData);
-
   // --- State for filter dialog ---
   const [isFilterDialogVisible, setIsFilterDialogVisible] = useState(false);
 
-  // --- State for provider dropdown ---
+  // --- State for filters ---
+  const [selectedWallet, setSelectedWallet] = useState("All");
   const [selectedProvider, setSelectedProvider] = useState("All");
-  const [isProviderOpen, setIsProviderOpen] = useState(false);
-
-  // --- State for category dropdown ---
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
   // --- State for search ---
   const [searchInput, setSearchInput] = useState("");
@@ -249,10 +224,6 @@ export const TransactionsScreen = () => {
             onEndEditing={() => setSearch(searchInput)}
             onBlur={() => setSearch(searchInput)}
             onFocus={(event) => {
-              setIsWalletOpen(false);
-              setIsProviderOpen(false);
-              setIsCategoryOpen(false);
-
               if (scrollRef.current) {
                 scrollRef.current.scrollToFocusedInput(event.target);
               }
@@ -271,9 +242,6 @@ export const TransactionsScreen = () => {
           <TouchableOpacity
             onPress={() => {
               setIsDateDialogVisible(true);
-              setIsWalletOpen(false);
-              setIsProviderOpen(false);
-              setIsCategoryOpen(false);
             }}
           >
             <TextInput
@@ -473,18 +441,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   summaryRow: { flexDirection: "row", gap: 12 },
-  summaryWallet: {
-    marginTop: 8,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: "#374151",
-    marginTop: 4,
-  },
-  dateContainer: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
   card: {
     flex: 1,
     backgroundColor: "#fff",
@@ -501,16 +457,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666",
     marginTop: 6,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  subTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 5,
   },
   searchRow: {
     flexDirection: "row",
@@ -529,39 +475,6 @@ const styles = StyleSheet.create({
   },
   filterGroup: {
     marginBottom: 10,
-  },
-  dropdownTrigger: {
-    backgroundColor: "#f3f4f6",
-    borderRadius: 12,
-    padding: 12,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  triggerText: {
-    fontSize: 14,
-    color: "#1f2937",
-    fontWeight: "500",
-  },
-  dropdownListContainer: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    overflow: "hidden",
-    elevation: 3,
-  },
-  dropdownItem: {
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  itemText: {
-    fontSize: 14,
-    color: "#374151",
   },
   dateInput: {
     backgroundColor: "#f3f4f6",
@@ -653,16 +566,6 @@ const styles = StyleSheet.create({
   disabledNext: {
     color: "#d1d5db",
     opacity: 0.5,
-  },
-  typeRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  typeChipText: {
-    fontSize: 12,
-    fontWeight: 500,
-    color: "#374151",
-    textTransform: "capitalize",
   },
   filterRow: {
     flexDirection: "row",
