@@ -59,7 +59,7 @@ export const useGmail = () => {
     user,
     signIn,
     signOut,
-    isLoading: isLoading || isSyncing,
+    isLoading,
 
     // Sync State
     fullSyncEmails: () => syncEmails("full"),

@@ -318,13 +318,13 @@ export const SettingsScreen = () => {
             style={[
               styles.button,
               { backgroundColor: "#dc2626", marginTop: 15 },
-              isLoading && styles.buttonDisabled,
+              (isLoading || isSyncing) && styles.buttonDisabled,
             ]}
             onPress={() => {
               console.log("Signing out from gmail");
               signOut();
             }}
-            disabled={isLoading}
+            disabled={isLoading || isSyncing}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
@@ -343,7 +343,7 @@ export const SettingsScreen = () => {
               console.log("Signing in to gmail");
               signIn();
             }}
-            disabled={isLoading}
+            disabled={isLoading || isSyncing}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
@@ -370,7 +370,7 @@ export const SettingsScreen = () => {
           <TouchableOpacity
             style={[
               styles.button,
-              { marginTop: 5 },
+              { marginTop: 10 },
               (isSyncing || !user) && styles.buttonDisabled,
             ]}
             onPress={fullSyncEmails}
@@ -408,7 +408,7 @@ export const SettingsScreen = () => {
           style={[
             styles.button,
             isImporting && styles.buttonDisabled,
-            { marginTop: 5 },
+            { marginTop: 10 },
           ]}
           onPress={handleImportCsv}
           disabled={isImporting}
